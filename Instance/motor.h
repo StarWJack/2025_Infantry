@@ -60,7 +60,7 @@ typedef struct
 }Motor_InitTypedef;
 
 extern void MotorOptLmt(Motor_TypeDef *motor, float lmt);
-extern void MotorStatusUpdate(Motor_TypeDef *motor, PID_Type_e newtype, float *source);
+extern void MotorStatusChange(Motor_TypeDef *motor, PID_Type_e newtype, float *source);
 extern void MotorCalc(void);
 extern void MotorInit(void);
 extern void MotorSetTar(Motor_TypeDef *motor, float tar, uint8_t style);

@@ -56,7 +56,7 @@ void CanInit()
     {
         can_list[i] = &(motor_list[i]->can);
     }
-    /* 手动配置帧头列表 start */
+    /* 手动配置帧头列表（取巧，1是0x1FF，2是0x200） start */
     can_txheader[0] = &motor_list[1]->can.txheader;
     can_txheader[1] = &motor_list[2]->can.txheader;
 
@@ -66,7 +66,9 @@ void CanInit()
     for(int i=0;i<CAN_HEADER_NUM;i++)
     {
         uint8_t count_1=0;
+        #ifdef USE_CAN2
         uint8_t count_2=0;
+        #endif
         for(int j=0;j<CAN_INST_NUM;j++)
         {
             if(can_list[j]->txheader.StdId == can_txheader[i]->StdId)

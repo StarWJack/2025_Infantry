@@ -109,7 +109,7 @@ void MotorCalc(void)
  * @note    '*source' can transmit as NULL if 'newtype' != 'IMU'
  */
 //TODO:增加看门狗 && 整合、废弃
-void MotorStatusUpdate(Motor_TypeDef *motor, PID_Type_e newtype, float *source)
+void MotorStatusChange(Motor_TypeDef *motor, PID_Type_e newtype, float *source)
 {
     if(newtype==motor->info.pid_type || source==NULL)
         return;
@@ -326,7 +326,6 @@ uint8_t MotorSetZeroPoint(Motor_TypeDef *motor)
 
 void MotorInit()
 {
-
     PID_TypeDef pid_outer = {
     .Kp = 22.81,
     .Ki = 0.004423,
@@ -354,6 +353,7 @@ void MotorInit()
     .pid_inner = pid_inner,
     .opt_max = 10000
    };
+
     /* Yaw init */
     MotorRegist(init);   
 
