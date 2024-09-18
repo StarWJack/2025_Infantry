@@ -26,7 +26,7 @@ typedef enum
 }PID_Type_e;
 
 extern float PID_Origin(PID_TypeDef *hpid, float val_now, float target_now);
-extern float PID_Incr(PID_TypeDef *hpid, float val_now, float target_now);
+extern float PID_Incr(PID_TypeDef *hpid, float val_now, float target_val_now);
 extern void PID_Clear(PID_TypeDef *hpid);
 
 #endif

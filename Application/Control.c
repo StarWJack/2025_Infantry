@@ -44,7 +44,8 @@ void KeyboardCtrl(Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 
 void RemoteCtrl(Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 {
-    chs->vx = -RC_Ctl.rc.ch2 * REMOTE_X_SEN;
+    //TODO:vx修改了方向，注意
+    chs->vx = RC_Ctl.rc.ch2 * REMOTE_X_SEN;
     chs->vy = -RC_Ctl.rc.ch1 * REMOTE_Y_SEN;
     // chassis_cmd.omega_z = RC_Ctl.rc.sw2==1 ? 2*PI : 0;
     gim->shooter = RC_Ctl.rc.sw2==1 ? FULL_AUTO : 0;

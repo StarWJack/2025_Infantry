@@ -17,7 +17,7 @@
 #define CAN_HEADER_NUM 2    //CAN标识符数量
 #define CAN_INST_NUM 9      //CAN设备总数
 #define CAN_NUM 2           //CAN控制器数量
-#define USE_CAN2 1        //若使用CAN2，取消注释
+#define USE_CAN2 0        //若使用CAN2，取消注释
 #define TOPIC_NUM 0
 
 //IMU
@@ -33,8 +33,8 @@
 //遥控器灵敏度设置
 #define REMOTE_YAW_SEN 0.000004
 #define REMOTE_PITCH_SEN 0.0000006125
-#define REMOTE_X_SEN    0.005
-#define REMOTE_Y_SEN    0.005
+#define REMOTE_X_SEN    0.002
+#define REMOTE_Y_SEN    0.002
 
 
 //控制器
@@ -42,7 +42,7 @@
 
 //车体数据
 #define WHEEL_RADIUS 0.075  //底盘车轮半径, 米
-#define CHASSIS_RADIUS 0.23
+#define CHASSIS_RADIUS 0.214
 #define FRICTION_RADIUS 0.03	//摩擦轮半径
 
 /*步兵1*/

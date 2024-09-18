@@ -38,9 +38,9 @@ float PID_Origin(PID_TypeDef *hpid, float val_now, float target_now)
  * @retval 	控制量的增量
  *
  */
-float PID_Incr(PID_TypeDef *hpid, float val_now, float target_now)
+float PID_Incr(PID_TypeDef *hpid, float val_now, float target_val_now)
 {
-	hpid->Err_now = target_now - val_now;
+	hpid->Err_now = target_val_now - val_now;
     float Output;
     Output = hpid->Kp*(hpid->Err_now - hpid->Err_last) + hpid->Ki*(hpid->Err_now) + hpid->Kd*(hpid->Err_now - hpid->Err_last - hpid->Err_diff);
 	if(Output > hpid->Output_Max) Output = hpid->Output_Max;

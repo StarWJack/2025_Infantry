@@ -142,23 +142,27 @@ float MotorGetVal(Motor_TypeDef *motor, uint8_t style)
     if(style!=ORIGIN && style!=RAD)
         sErrorHandel(OUT_OF_ENUM);
     float val;
+
     if(motor->info.pid_type==ANGLE || motor->info.pid_type==DUAL_LOOP || motor->info.pid_type==AMMO)
         if(style == ORIGIN)
             val = motor->data.angle;
         else if(motor->info.motor_type==GM6020 || motor->info.motor_type==M2006)
-            val = (((float)motor->data.angle/8192.0)*2*PI);
+            val = (((float)motor->data.angle/8192.0f)*2*PI);
         else
             sErrorHandel(UNEXPECTED);
+
     else if(motor->info.pid_type == SPEED)
         if(style == ORIGIN)
             val = motor->data.speed;
         else
             val = motor->data.speed*2*PI/60;
+
     else if(motor->info.pid_type == IMU)
         if(style == ORIGIN)
             val = motor->data.angle;
         else 
             val = motor->value(motor);
+
     else
         sErrorHandel(OUT_OF_ENUM);
     
@@ -322,20 +326,20 @@ uint8_t MotorSetZeroPoint(Motor_TypeDef *motor)
 
 void MotorInit()
 {
-    /* Yaw init */
+
     PID_TypeDef pid_outer = {
-        .Kp = 22.81,
-        .Ki = 0.004423,
-        .Kd = 14.4,
-        .Output_Max = 12000,
-        .Err_sum_Max = 5000
+    .Kp = 22.81,
+    .Ki = 0.004423,
+    .Kd = 14.4,
+    .Output_Max = 12000,
+    .Err_sum_Max = 5000
     };
     PID_TypeDef pid_inner = {
-        .Kp = 3.5,
-        .Ki =400,
-        .Kd = 1.50,
-        .Output_Max = 12000,
-        .Err_sum_Max = 10000
+    .Kp = 3.5,
+    .Ki =400,
+    .Kd = 1.50,
+    .Output_Max = 12000,
+    .Err_sum_Max = 10000
     };
     Motor_InitTypedef init = {
     .can_id = 1,
@@ -350,6 +354,7 @@ void MotorInit()
     .pid_inner = pid_inner,
     .opt_max = 10000
    };
+    /* Yaw init */
     MotorRegist(init);   
 
     /* Pitch init */
@@ -383,19 +388,26 @@ void MotorInit()
     init.pid_type = SPEED;
     init.opt_max = 5000;
     init.txheader_id = 0x200;
-    init.rxheader_id = 0x200 + init.can_id;
+//    .rxheader_id = 0x200 + init.can_id,
+    init.rxheader_id = 0x201;
     MotorRegist(init);
+
     init.can_id = 2;
     init.list_id = MOTOR_CHS_2;
-    init.rxheader_id = 0x200 + init.can_id;
+//    .rxheader_id = 0x200 + init.can_id,
+    init.rxheader_id = 0x202;
     MotorRegist(init);
+
     init.can_id = 3;
     init.list_id = MOTOR_CHS_3;
-    init.rxheader_id = 0x200 + init.can_id;
+//    .rxheader_id = 0x200 + init.can_id,
+    init.rxheader_id = 0x203;
     MotorRegist(init);
+
     init.can_id = 4;
     init.list_id = MOTOR_CHS_4;
-    init.rxheader_id = 0x200 + init.can_id;
+//    .rxheader_id = 0x200 + init.can_id,
+    init.rxheader_id = 0x204;
     MotorRegist(init);
 
     //shooter init
@@ -403,11 +415,14 @@ void MotorInit()
     init.can_id = 1;
     init.list_id = MOTOR_SHT_R;
     init.txheader_id = 0x200;
-    init.rxheader_id = 0x200 + init.can_id;
+//    .rxheader_id = 0x200 + init.can_id,
+    init.rxheader_id = 0x201;
     MotorRegist(init);
+
     init.can_id = 2;
     init.list_id = MOTOR_SHT_L;
-    init.rxheader_id = 0x200 + init.can_id;
+//    .rxheader_id = 0x200 + init.can_id,
+    init.rxheader_id = 0x202;
     MotorRegist(init);
 
     //ammofeeder init
@@ -427,7 +442,8 @@ void MotorInit()
     init.pid_type = AMMO;
     init.list_id = MOTOR_AMMO;
     init.txheader_id = 0x1FF;
-    init.rxheader_id = 0x200 + init.can_id;
+//    .rxheader_id = 0x200 + init.can_id,
+    init.rxheader_id = 0x207;
     MotorRegist(init);
 
 }
@@ -438,16 +454,17 @@ void MotorInit()
  * @retval 	无
  */
 //TODO: 添加对其他电机的支持
+CAN_TxHeaderTypeDef txheader = {
+    .ExtId =   0x0,
+    .IDE = CAN_ID_STD,
+    .RTR = CAN_RTR_DATA,
+    .DLC = 8,
+
+};
 void MotorRegist(Motor_InitTypedef st)
 {
+    txheader.StdId = st.txheader_id;
     Motor_TypeDef static motor;
-    CAN_TxHeaderTypeDef txheader = {
-        .ExtId =   0x0, 
-        .IDE = CAN_ID_STD,
-		.RTR = CAN_RTR_DATA,
-		.DLC = 8,
-        .StdId = st.txheader_id
-        };
     motor.can.txheader = txheader;
     motor.can.rxheader.StdId = st.rxheader_id;
     motor.can.rxheader.DLC = 8;

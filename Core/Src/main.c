@@ -142,7 +142,7 @@ int main(void)
   CANBusInit();
   GimbalInit();
   ChassisInit();
-  UI_taskInit();
+//  UI_taskInit();
   /* USER CODE END 2 */
 
   /* Init scheduler */

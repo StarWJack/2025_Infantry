@@ -11,11 +11,7 @@ extern void MotorStop(Motor_TypeDef *motor);
 
 
 osThreadId_t canbus_task_handel;
-//const osThreadAttr_t canbus_task_handel_attributes = {
-//  .name = "CANBusTask",
-//  .stack_size = 128 * 4,
-//  .priority = (osPriority_t) osPriorityHigh,
-//};
+
 
 void CANBusInit()
 {
