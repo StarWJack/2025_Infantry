@@ -3,3 +3,12 @@
 /.idea
 /cmake-build-debug
 /Debug
+/.vscode
+/.vs
+/.idea
+/build
+*.o
+*.d
+*.bin
+*.elf
+*.hex
