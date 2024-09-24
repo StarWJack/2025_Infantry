@@ -43,7 +43,7 @@ float ChassisGetOmega(Motor_TypeDef *motor[4])
     float ret=0;
     for(int i=0;i<4;i++)
         ret += MotorGetVal(motor[i], ORIGIN)/60;	//RPM to RPS
-    ret = (ret*187.0/3591.0)/4;	//转换到输出端转速
+    ret = (ret*187.0f/3591.0f)/4;	//转换到输出端转速
     ret = ret*(WHEEL_RADIUS/CHASSIS_RADIUS);
     return ret;
 }
@@ -56,7 +56,7 @@ void ChassisInit(void)
     chassis_RMQ_handel = osMessageQueueNew(3, sizeof(float), &msg_attr);
     osThreadAttr_t task_attr = {.name = "ChassisTask"};
     chassis_task_handel = osThreadNew(ChassisTask, NULL, &task_attr);
-    MotorStatusUpdate(motor_list[MOTOR_CHS_1], SPEED, NULL);
+    MotorStatusChange(motor_list[MOTOR_CHS_1], SPEED, NULL);
 }
 
 void ChassisTask(void *arguement)
