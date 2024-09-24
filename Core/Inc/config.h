@@ -31,18 +31,23 @@
 #define CANBUS_TASK_PERIOD 1 
 
 //遥控器灵敏度设置
-#define REMOTE_YAW_SEN 0.000004
-#define REMOTE_PITCH_SEN 0.0000006125
-#define REMOTE_X_SEN    0.002
-#define REMOTE_Y_SEN    0.002
+#define REMOTE_YAW_SEN 0.001f
+#define REMOTE_PITCH_SEN 0.001f
+
+
+//遥控器灵敏度设置
+#define REMOTE_YAW_SEN 0.000004f
+#define REMOTE_PITCH_SEN 0.0000006125f
+#define REMOTE_X_SEN    0.002f
+#define REMOTE_Y_SEN    0.002f
 
 
 //控制器
 // #define USE_REMOTE_KEYBORAD 1    //若使用遥控器传输键鼠数据，取消注释
 
 //车体数据
-#define WHEEL_RADIUS 0.075  //底盘车轮半径, 米
-#define CHASSIS_RADIUS 0.214
+#define WHEEL_RADIUS 0.075f  //底盘车轮半径, 米
+#define CHASSIS_RADIUS 0.214f
 #define FRICTION_RADIUS 0.03	//摩擦轮半径
 
 /*步兵1*/
@@ -51,15 +56,15 @@
 //#define CHASSIS_ZEROPOINT   7900	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
 
 /*步兵2*/
-#define PITCH_UP_BOUND	2*PI*7200/8192.0
-#define PITCH_LW_BOUND  2*PI*6250/8192.0	//pitch轴可动范围上下界
-#define CHASSIS_ZEROPOINT   300	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
+#define PITCH_UP_BOUND	2*PI*7200/8192.0f
+#define PITCH_LW_BOUND  2*PI*6250/8192.0f	//pitch轴可动范围上下界
+#define CHASSIS_ZEROPOINT   7872	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
 
 //性能
 #define SHOOT_FREQ 3    //射频, hz
 #define BULLET_V 10     //弹速, m/s
 #define CALIBRATE 1     //弹速校准比率
-#define CHS_SPEED_LMT   2
+#define CHS_SPEED_LMT   2.0f
 #define CHS_SPIN_LMT    2*PI
 
 //other

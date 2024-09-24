@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "Control.h"
 #include "cmsis_os2.h"
 #include "remote.h"
