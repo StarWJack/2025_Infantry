@@ -8,7 +8,7 @@
 #include "ErrorHandel.h"
 #include "malloc.h"
 
-extern IMU_TypeDef *imu_list[IMU_NUM];
+
 Motor_TypeDef *motor_list[MOTOR_NUM];
 
 void MotorRegist(Motor_InitTypedef st);

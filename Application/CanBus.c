@@ -6,7 +6,7 @@
 #include "motor.h"
 #include "sin.h"
 #include "usart.h"
-extern void MotorStop(Motor_TypeDef *motor);
+
 
 
 
