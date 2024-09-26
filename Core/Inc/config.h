@@ -11,7 +11,8 @@
 #define MOTOR_CHS_4 5
 #define MOTOR_AMMO 6    //ammofeeder motor  ID=7
 #define MOTOR_SHT_L 7   //left shooter motor ID=2,1
-#define MOTOR_SHT_R 8   
+#define MOTOR_SHT_R 8
+
 
 //CAN
 #define CAN_HEADER_NUM 2    //CAN标识符数量
@@ -62,6 +63,7 @@
 //性能
 #define SHOOT_FREQ 3    //射频, hz
 #define BULLET_V 10     //弹速, m/s
+#define MOTORSPEED_DIFF 2.0f //弹速差异，m/s
 #define CALIBRATE 1     //弹速校准比率
 #define CHS_SPEED_LMT   2.0f
 #define CHS_SPIN_LMT    2*PI
