@@ -29,7 +29,6 @@ void CANBusTask(void *argument)
 //		Freq_Tab[i] *= 0.5;
     for(;;)
     {
-
     	MotorCalc();
     	CanSendMsg();
     	diff = osKernelGetTickCount() - time;
