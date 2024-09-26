@@ -3,7 +3,7 @@
 #include "main.h"
 #include "cmsis_os2.h"
 
-#define ROOT_2 1.4142135f
+#define SQRT_2 1.4142135f
 
 typedef struct
 {

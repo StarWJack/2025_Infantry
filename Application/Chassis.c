@@ -19,19 +19,18 @@ void OnmiSolve(Chassis_CmdTypedef *cmd, float *ret)
     /*         vx
                 ^
                 |
-           1//      \\2
+           0//      \\1
            // \    / \\
-    vy<--      top         
+               top      -->vy     
            \\ /    \ //
-           4\\      //3    
+           3\\      //2    
                         
     */
-    ret[0] = (cmd->omega_z*(2*PI*CHASSIS_RADIUS)-(-ROOT_2*cmd->vx + ROOT_2*cmd->vy)) / WHEEL_RADIUS;
-    ret[1] = (cmd->omega_z*(2*PI*CHASSIS_RADIUS)-(ROOT_2*cmd->vx + ROOT_2*cmd->vy)) / WHEEL_RADIUS;
-    ret[2] = (cmd->omega_z*(2*PI*CHASSIS_RADIUS)-(ROOT_2*cmd->vx - ROOT_2*cmd->vy)) / WHEEL_RADIUS;
-    ret[3] = (cmd->omega_z*(2*PI*CHASSIS_RADIUS)-(-ROOT_2*cmd->vx - ROOT_2*cmd->vy)) / WHEEL_RADIUS;
+    ret[0] = (cmd->omega_z * (2*PI*CHASSIS_RADIUS) + (-cmd->vx - cmd->vy) * SQRT_2) / WHEEL_RADIUS;
+    ret[1] = (cmd->omega_z * (2*PI*CHASSIS_RADIUS) + (-cmd->vx + cmd->vy) * SQRT_2) / WHEEL_RADIUS;
+    ret[2] = (cmd->omega_z * (2*PI*CHASSIS_RADIUS) + (cmd->vx + cmd->vy) * SQRT_2) / WHEEL_RADIUS;
+    ret[3] = (cmd->omega_z * (2*PI*CHASSIS_RADIUS) + (cmd->vx - cmd->vy) * SQRT_2) / WHEEL_RADIUS;
 }
-
 /*
  * @brief  	全向轮逆解算(3508电机)
  * @param	底盘四电机结构体指针，顺序1-4

@@ -5,6 +5,8 @@
 #include "malloc.h"
 #include "string.h"
 #include "math.h"
+#include "MahonyAHRS.h"
+
 IMU_TypeDef *imu_list[IMU_NUM];
 uint8_t spi_TxData, spi_RxData;
 
