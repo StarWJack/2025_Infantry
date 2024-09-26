@@ -1,10 +1,10 @@
 /*
  * @file		WatchDog.c/h
- * @brief	一个简易版本的看门狗程序
+ * @brief	    软件看门狗程序
  * @history
  * 版本			作者			编写日期
  * v1.0.0		郑煜壅		2023/4/1
- *
+ * v2.0.0		冯俊玮		2024/9/26
  */
 
 #include "main.h"

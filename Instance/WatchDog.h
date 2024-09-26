@@ -1,11 +1,4 @@
-/*
- * @file		WatchDog.c/h
- * @brief	一个简易版本的看门狗程序
- * @history
- * 版本			作者			编写日期
- * v1.0.0		郑煜壅		2023/4/1
- *
- */
+
 #ifndef WATCHDOG_H
 #define WATCHDOG_H
 
