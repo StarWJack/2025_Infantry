@@ -8,12 +8,15 @@
 #include "motor.h"
 #include "imu.h"
 #include "math.h"
+#include "WatchDog.h"
 
 osThreadId_t control_task_handel;
 void ControlInit(void)
 {
 	osThreadAttr_t attr = {.name = "ControlTask"};
     control_task_handel = osThreadNew(ControlTask, NULL, &attr);
+
+    WatchDogInit();
 }
 
 /*
@@ -88,6 +91,8 @@ void ControlTask(void *argument)
         osMessageQueuePut(chassis_MQ_handel, &chassis_cmd, NULL, 0);
 //        osDelayUntil(time+CONTROL_TASK_PERIOD);
 //        time = osKernelSysTick();
+
+        WatchDogTask();
 
         osDelay(CONTROL_TASK_PERIOD);
     }

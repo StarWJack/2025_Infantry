@@ -24,6 +24,9 @@
 #define IMU_NUM 1
 #define IMU_YAW 0
 
+//WatchDog
+#define LOSTTIME_MAX 1000 //此处修改最小判断离线时间，单位ms
+
 //freeRTOS任务周期
 #define CONTROL_TASK_PERIOD 10   //freeRTOS执行周期, ms
 #define GIMBAL_TASK_PERIOD 10 
@@ -66,9 +69,11 @@
 //other
 #define ABS 0
 #define INCR 1
+
 #define OUTER 0
 #define INNER 1
 #define FEED 2
+
 #define ORIGIN 0
 #define RAD 1
 

@@ -4,15 +4,16 @@
 #include "main.h"
 
 #define MOTOR0LOST 0
-#define MOT1R1LOST 1
-#define MOT2R0LOST 2
-#define MOT3R0LOST 3
-#define MOT4R0LOST 4
-#define MOT5R0LOST 5
-#define MOT6R0LOST 6
-#define MOT7R0LOST 7
-#define MOT8R0LOST 8
-#define MOT9R0LOST 9
+#define MOTOR1LOST 1
+#define MOTOR2LOST 2
+#define MOTOR3LOST 3
+#define MOTOR4LOST 4
+#define MOTOR5LOST 5
+#define MOTOR6LOST 6
+#define MOTOR7LOST 7
+#define MOTOR8LOST 8
+#define MOTOR9LOST 9
+#define SERIALLOST 10
 
 #define OUT_OF_ENUM 20
 #define NULL_POINTER 21
