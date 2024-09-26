@@ -30,10 +30,6 @@
 #define CHASSIS_TASK_PERIOD 10
 #define CANBUS_TASK_PERIOD 1 
 
-//遥控器灵敏度设置
-#define REMOTE_YAW_SEN 0.001f
-#define REMOTE_PITCH_SEN 0.001f
-
 
 //遥控器灵敏度设置
 #define REMOTE_YAW_SEN 0.000004f
