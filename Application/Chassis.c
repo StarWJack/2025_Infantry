@@ -41,7 +41,8 @@ float ChassisGetOmega(Motor_TypeDef *motor[4])
 {
     float ret=0;
     for(int i=0;i<4;i++)
-        ret += MotorGetVal(motor[i], ORIGIN)/60;	//RPM to RPS
+        ret += MotorGetVal(motor[i], ORIGIN);
+    ret = ret /60 ;    //RPM to RPS
     ret = (ret*187.0f/3591.0f)/4;	//转换到输出端转速
     ret = ret*(WHEEL_RADIUS/CHASSIS_RADIUS);
     return ret;

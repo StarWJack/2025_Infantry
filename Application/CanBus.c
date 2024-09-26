@@ -7,11 +7,7 @@
 #include "sin.h"
 #include "usart.h"
 
-
-
-
 osThreadId_t canbus_task_handel;
-
 
 void CANBusInit()
 {
@@ -38,7 +34,7 @@ void CANBusTask(void *argument)
     	CanSendMsg();
     	diff = osKernelGetTickCount() - time;
         time = osKernelGetTickCount();
-    	osDelay(1);
+    	osDelay(CANBUS_TASK_PERIOD);
     }
 
 
