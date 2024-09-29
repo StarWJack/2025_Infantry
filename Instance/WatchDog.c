@@ -59,6 +59,6 @@ void WatchDogTask(void)
     for(int i=0;i <MOTOR_NUM -1;i++)
         if(!Dog_Status_update(&motor_WatchDog[i]))
             sErrorHandel(i);
-    if(!(Dog_Status_update(&remote_WatchDog) && Dog_Status_update(&referee_WatchDog)))
-        sErrorHandel(SERIALLOST);
+//    if(!(Dog_Status_update(&remote_WatchDog) && Dog_Status_update(&referee_WatchDog)))
+//        sErrorHandel(SERIALLOST);
 }
