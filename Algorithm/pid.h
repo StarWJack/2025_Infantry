@@ -6,6 +6,7 @@ typedef struct __PID_TypeDef
 	float Kp;
 	float Ki;
 	float Kd;
+    float K;//前馈系数
 	float Err_former;
 	float Err_last;
 	float Err_now;
@@ -13,6 +14,7 @@ typedef struct __PID_TypeDef
 	float Err_diff;
 	float Output_Max;
 	float Err_sum_Max;
+    float Output_last;
 
 }PID_TypeDef;
 

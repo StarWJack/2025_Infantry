@@ -20,6 +20,9 @@ float PID_Origin(PID_TypeDef *hpid, float val_now, float target_now)
 
 	Output = hpid->Kp*hpid->Err_now + hpid->Ki*hpid->Err_sum
 			+ (hpid->Kd)*(hpid->Err_now - hpid->Err_last);
+
+    Output += hpid->K*(Output - hpid->Output_last);//前馈
+
     if(Output > hpid->Output_Max)
 		Output = hpid->Output_Max;
 	if(Output < -hpid->Output_Max )
@@ -27,6 +30,9 @@ float PID_Origin(PID_TypeDef *hpid, float val_now, float target_now)
 
 	hpid->Err_former = hpid->Err_last;
 	hpid->Err_last = hpid->Err_now;
+    hpid->Output_last = Output;
+
+
     return Output;
 }
 /*
@@ -49,6 +55,7 @@ float PID_Incr(PID_TypeDef *hpid, float val_now, float target_val_now)
 	hpid->Err_last = hpid->Err_now;
     return Output;
 }
+
 
 /*
  * @brief  	清除PID积分值和输出
