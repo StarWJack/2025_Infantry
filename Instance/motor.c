@@ -326,17 +326,21 @@ uint8_t MotorSetZeroPoint(Motor_TypeDef *motor)
 
 void MotorInit()
 {
+
     PID_TypeDef pid_outer = {
-    .Kp = 22.81,
-    .Ki = 0.004423,
-    .Kd = 14.4,
+    .Kp = 22.81f,
+    .Ki = 0.004423f,
+    .Kd = 15.0f,
     .Output_Max = 12000,
     .Err_sum_Max = 5000
     };
+//        .Kp = 3.5f,
+//    .Ki =400,
+//    .Kd = 1.50f,
     PID_TypeDef pid_inner = {
-    .Kp = 3.5,
-    .Ki =400,
-    .Kd = 1.50,
+    .Kp = 15.0f,
+    .Ki = 400,
+    .Kd = 1.50f,
     .Output_Max = 12000,
     .Err_sum_Max = 10000
     };
@@ -360,7 +364,6 @@ void MotorInit()
     /* Pitch init */
     init.can_id = 1;
     init.hcan = &hcan2;
-    init.rxheader_id = 0x205;
     init.list_id = MOTOR_PITCH;
     init.pid_type = DUAL_LOOP;
     init.source = NULL;
@@ -375,9 +378,9 @@ void MotorInit()
     MotorRegist(init);
 
     /* Chassis init */
-    pid_inner.Kp = 0.01;
+    pid_inner.Kp = 0.01f;
     pid_inner.Ki = 10;
-    pid_inner.Kd = 0.001;
+    pid_inner.Kd = 0.001f;
     pid_inner.Err_sum_Max = 1000;
     pid_inner.Output_Max = 5000;
     init.pid_inner = pid_inner;
@@ -427,7 +430,7 @@ void MotorInit()
 
     //ammofeeder init
     pid_outer.Kp = 70;
-    pid_outer.Ki = 0.1;
+    pid_outer.Ki = 0.1f;
     pid_outer.Kd = 0;
     pid_outer.Output_Max = 15000;
     pid_outer.Err_sum_Max = 4000;
