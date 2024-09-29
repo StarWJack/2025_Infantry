@@ -9,6 +9,11 @@
 #include "imu.h"
 #include "math.h"
 #include "WatchDog.h"
+#include "imu.h"
+
+
+
+
 
 osThreadId_t control_task_handel;
 void ControlInit(void)
@@ -16,7 +21,7 @@ void ControlInit(void)
 	osThreadAttr_t attr = {.name = "ControlTask"};
     control_task_handel = osThreadNew(ControlTask, NULL, &attr);
 
-    WatchDogInit();
+//    WatchDogInit();
 }
 
 /*
@@ -28,11 +33,19 @@ void ControlInit(void)
  */
 void ChassisCmdTrans(Chassis_CmdTypedef *cmd, float chs_zeropoint, float gim_ang)
 {
-    float bias = ((gim_ang/8192)*2*PI) - ((chs_zeropoint/8192)*2*PI);
-    float vx_tmp = cmd->vx*cosf(bias) + cmd->vy*sinf(bias);
-    float vy_tmp = -cmd->vx*sinf(bias) + cmd->vy*cosf(bias);
+    float bias_tmp = (gim_ang - chs_zeropoint +8192.0f);
+    if(bias_tmp>8192)
+        bias_tmp -= 8192;
+    else if(bias_tmp<0)
+        bias_tmp += 8192;
+    bias_tmp = bias_tmp/8192*2*PI;
+
+//    bias = ((gim_ang/8192.0f)*2*PI) - ((chs_zeropoint/8192.0f)*2*PI);
+    float vx_tmp = cmd->vx*cosf(bias_tmp) + cmd->vy*sinf(bias_tmp);
+    float vy_tmp = -cmd->vx*sinf(bias_tmp) + cmd->vy*cosf(bias_tmp);
     cmd->vx = vx_tmp;
     cmd->vy = vy_tmp;
+
 }
 
 void KeyboardCtrl(Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
@@ -48,9 +61,10 @@ void KeyboardCtrl(Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 
 void RemoteCtrl(Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 {
-    //TODO:vx修改了方向，注意
     chs->vx = RC_Ctl.rc.ch2 * REMOTE_X_SEN;
-    chs->vy = -RC_Ctl.rc.ch1 * REMOTE_Y_SEN;
+    chs->vy = RC_Ctl.rc.ch1 * REMOTE_Y_SEN;
+
+
     // chassis_cmd.omega_z = RC_Ctl.rc.sw2==1 ? 2*PI : 0;
     gim->shooter = RC_Ctl.rc.sw2==1 ? FULL_AUTO : 0;
     if(RC_Ctl.rc.sw2==1 || RC_Ctl.rc.sw2==3)
@@ -61,7 +75,7 @@ void RemoteCtrl(Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
     gim->v_pitch = -RC_Ctl.rc.ch4 * REMOTE_PITCH_SEN*CONTROL_TASK_PERIOD;
 
 }
-
+//TODO:添加底盘跟随和小陀螺时云台自稳
 void ControlTask(void *argument)
 {
 //    uint32_t time = osKernelSysTick();
@@ -71,7 +85,7 @@ void ControlTask(void *argument)
     for(;;)
     {
         if(RC_Ctl.rc.sw1!=1 && RC_Ctl.rc.sw1!=3)
-        {   
+        {
             MotorStop(NULL);
             chassis_cmd.stop = 1;
         }
@@ -80,11 +94,28 @@ void ControlTask(void *argument)
             MotorRestart(NULL);
             chassis_cmd.stop = 0;
         }
+//        if(RC_Ctl.rc.sw1 == 2)
+//        {
+//            MotorStop(NULL);
+//            chassis_cmd.stop = 1;
+//        }
+//        else
+//        {
+//            chassis_cmd.stop = 0;
+//        }
         imu_list[0]->update(imu_list[0]);
+        yawww = imu_list[0]->yaw(imu_list[0]);
         KeyboardCtrl(&gimbal_cmd, &chassis_cmd);
         RemoteCtrl(&gimbal_cmd, &chassis_cmd);
         ChassisCmdTrans(&chassis_cmd, CHASSIS_ZEROPOINT, MotorGetVal(motor_list[MOTOR_YAW], ORIGIN));
-        
+//        ChassisCmdTrans(&chassis_cmd, 0, MotorGetVal(motor_list[MOTOR_YAW], ORIGIN));
+//        if(RC_Ctl.rc.sw1 == 1)
+//        {
+//
+//        }
+//        else if(RC_Ctl.rc.sw1 == 3)
+//        {
+//        }
         osMessageQueueGet(chassis_RMQ_handel, &omege_chs, NULL, 0);         
         gimbal_cmd.omega_z = -omege_chs;
         osMessageQueuePut(gimbal_MQ_handel, &gimbal_cmd, NULL, 0);
@@ -92,7 +123,7 @@ void ControlTask(void *argument)
 //        osDelayUntil(time+CONTROL_TASK_PERIOD);
 //        time = osKernelSysTick();
 
-        WatchDogTask();
+//        WatchDogTask();
 
         osDelay(CONTROL_TASK_PERIOD);
     }

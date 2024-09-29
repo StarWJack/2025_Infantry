@@ -56,9 +56,9 @@
 //#define CHASSIS_ZEROPOINT   7900	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
 
 /*步兵2*/
-#define PITCH_UP_BOUND	2*PI*7200/8192.0f
-#define PITCH_LW_BOUND  2*PI*6250/8192.0f	//pitch轴可动范围上下界
-#define CHASSIS_ZEROPOINT   7872	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
+#define PITCH_UP_BOUND	2*PI*7540/8192.0f
+#define PITCH_LW_BOUND  2*PI*400/8192.0f	//pitch轴可动范围上下界
+#define CHASSIS_ZEROPOINT   7851	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
 
 //性能
 #define SHOOT_FREQ 3    //射频, hz
