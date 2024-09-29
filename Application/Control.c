@@ -50,8 +50,8 @@ void ChassisCmdTrans(Chassis_CmdTypedef *cmd, float chs_zeropoint, float gim_ang
 
 void KeyboardCtrl(Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 {
-    gim->v_yaw -= (RC_Ctl.keyboard.x >> 4)*0.001;
-    gim->v_pitch += (RC_Ctl.keyboard.y >> 4)*0.001;
+    gim->v_yaw -= (RC_Ctl.keyboard.x >> 4)*KEYBOARD_YAW_SEN;
+    gim->v_pitch += (RC_Ctl.keyboard.y >> 4)*KEYBOARD_PITCH_SEN;
     gim->shooter = RC_Ctl.keyboard.l>=1 ? SEMI_AUTO : STOP;
 
     chs->vx = (RC_Ctl.keyboard.W * (-CHS_SPEED_LMT)) + (RC_Ctl.keyboard.S * (CHS_SPEED_LMT));
@@ -104,7 +104,6 @@ void ControlTask(void *argument)
 //            chassis_cmd.stop = 0;
 //        }
         imu_list[0]->update(imu_list[0]);
-        yawww = imu_list[0]->yaw(imu_list[0]);
         KeyboardCtrl(&gimbal_cmd, &chassis_cmd);
         RemoteCtrl(&gimbal_cmd, &chassis_cmd);
         ChassisCmdTrans(&chassis_cmd, CHASSIS_ZEROPOINT, MotorGetVal(motor_list[MOTOR_YAW], ORIGIN));

@@ -189,7 +189,7 @@ float MotorGetAbsAngle(Motor_TypeDef *motor)
 {
     if(motor->info.motor_type == GM6020)
     {
-        return ((motor->data.angle/8192)*2*PI) -PI;
+        return ((motor->data.angle/8192.0f)*2*PI) -PI;
     }
     else
         return 0;
@@ -209,7 +209,6 @@ void MotorOptLmt(Motor_TypeDef *motor, float lmt)
         motor->output = limit;
     else if(motor->output <= -limit)
         motor->output = -limit;
-    return;
 }
 
 void MotorCanCbk(Can_InfoTypedef *st, uint8_t *rxdata, uint8_t list_id)
@@ -218,7 +217,6 @@ void MotorCanCbk(Can_InfoTypedef *st, uint8_t *rxdata, uint8_t list_id)
 	motor_list[list_id]->data.speed = (int16_t)(rxdata[2]<<8) + rxdata[3];
 	motor_list[list_id]->data.current = (int16_t)(rxdata[4]<<8) + rxdata[5];
 	motor_list[list_id]->data.temp = rxdata[6];
-    return;
 }
 
 void MotorFillMsg(Can_InfoTypedef *st, uint8_t *txdata, uint8_t list_id)
@@ -226,7 +224,6 @@ void MotorFillMsg(Can_InfoTypedef *st, uint8_t *txdata, uint8_t list_id)
     uint8_t tmp_id = st->CAN_id>4 ? (st->CAN_id)-4 : st->CAN_id;
     txdata[2 * (tmp_id-1)] = (int16_t)motor_list[list_id]->output >>8;
     txdata[(2*tmp_id) - 1] = (int16_t)motor_list[list_id]->output;
-    return;
 }
 
 /*
@@ -331,6 +328,7 @@ void MotorInit()
     .Kp = 22.81f,
     .Ki = 0.004423f,
     .Kd = 15.0f,
+    .K = 0.1f,
     .Output_Max = 12000,
     .Err_sum_Max = 5000
     };
@@ -341,6 +339,7 @@ void MotorInit()
     .Kp = 15.0f,
     .Ki = 400,
     .Kd = 1.50f,
+    .K = 0.0f,
     .Output_Max = 12000,
     .Err_sum_Max = 10000
     };
@@ -370,6 +369,7 @@ void MotorInit()
     pid_outer.Kp = 600;
     pid_outer.Ki = 4;
     pid_outer.Kd = 0;
+    pid_outer.K = 0;
     init.pid_outer = pid_outer;
     pid_inner.Kp = 300;
     pid_inner.Ki = 100;
@@ -499,5 +499,4 @@ void MotorRegist(Motor_InitTypedef st)
         motor.value = st.source;    //avoid null pointer
     motor_list[st.list_id] = malloc(sizeof(Motor_TypeDef));
     memcpy(motor_list[st.list_id], &motor, sizeof(Motor_TypeDef));
-    return;
 }

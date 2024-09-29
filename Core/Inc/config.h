@@ -41,6 +41,9 @@
 #define REMOTE_X_SEN    0.002f
 #define REMOTE_Y_SEN    0.002f
 
+//键盘灵敏度设置
+#define  KEYBOARD_YAW_SEN 0.001f
+#define  KEYBOARD_PITCH_SEN 0.001f
 
 //控制器
 // #define USE_REMOTE_KEYBORAD 1    //若使用遥控器传输键鼠数据，取消注释
