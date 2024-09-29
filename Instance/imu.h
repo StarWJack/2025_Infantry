@@ -31,9 +31,10 @@ typedef struct
 {
     IMU_enum imu_type;
     Protocol_enum p_type;
-    float bias_pitch;
-    float bias_yaw;
-    float bias_y;
+    float yaw_zero_point;
+    float bias_g1;
+    float bias_g2;
+    float bias_a1;
     uint8_t enable;
 }IMU_InfoTypeDef;
 

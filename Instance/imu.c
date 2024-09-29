@@ -6,6 +6,7 @@
 #include "string.h"
 #include "math.h"
 #include "MahonyAHRS.h"
+#include "motor.h"
 
 IMU_TypeDef *imu_list[IMU_NUM];
 uint8_t spi_TxData, spi_RxData;
@@ -123,7 +124,7 @@ void BMI088Init(IMU_TypeDef *imu)
         BMI088WriteByte(imu, 0x00,  0x11, gyro);
         BMI088WriteByte(imu, GYRO_RANGE_500_DEG_S, GYRO_RANGE_ADDR, gyro);//±500
         BMI088WriteByte(imu, GYRO_ODR_200Hz_BANDWIDTH_64Hz, GYRO_BANDWIDTH_ADDR, gyro);
-
+//        sum =0;
 }
 
 
@@ -144,16 +145,17 @@ void BMI088Update(IMU_TypeDef *imu)
 		 for(int i=0;i<3;i++)
 		 {
 
-				 imu_gyro[i] = (imu->gyro[i])/65.536*(PI/180);
+				 imu_gyro[i] = (imu->gyro[i])/65.536f*(PI/180.0f);
 
 				 imu_accel[i] = imu->accel[i]*0.0008974f;
 	//		 imu_mag[i] = imu->mag[i]*0.3;
 
 		 }
 		 /***减去零偏值***/
-		 imu_gyro[1] -= imu->info.bias_pitch;
-		 imu_gyro[2] -= imu->info.bias_yaw;
-		 imu_accel[1] -= imu->info.bias_y;
+		 imu_gyro[1] -= imu->info.bias_g1;
+		 imu_gyro[2] -= imu->info.bias_g2;
+		 imu_accel[1] -= imu->info.bias_a1;
+
 
 		 /***互补滤波***/
 		 float static last_q[4];
@@ -174,9 +176,10 @@ float IMUGetPitch(IMU_TypeDef *imu)
     return imu->angle[2];
 }
 
+// -PI~PI (经过零点校准，实际零点方向与云台yaw零点方向相同)
 float IMUGetYaw(IMU_TypeDef *imu)
 {
-    return imu->angle[0];
+    return imu->angle[0] ;
 }
 
 void IMUInit()
@@ -190,9 +193,11 @@ void IMUInit()
 
 	imu1.info.p_type = SPI;
 	imu1.info.imu_type = BMI088;
-	imu1.info.bias_yaw = (10.4231017f / 65.536)*(PI/180);
-	imu1.info.bias_pitch = (11.5390333f / 65.536)*(PI/180);
-	imu1.info.bias_y = (141.763613f * 0.0008974);
+    imu1.info.bias_g1 = -167.439789f / 50080 ;
+	imu1.info.bias_g2 = 101.618088f / 50080 ;
+	imu1.info.bias_a1 = 3079.08667f / 50080 ;
+
+
 	
 	imu1.angle_q[0] = 1;
 	imu1.angle_q[1] = 0;
@@ -202,9 +207,10 @@ void IMUInit()
 	imu1.yaw = IMUGetYaw;
 	imu1.update = BMI088Update;
 	imu1.info.enable = 1;
+    uint16_t  yaw_zero_point_tmp = (motor_list[MOTOR_YAW]->data.angle - motor_list[MOTOR_YAW]->info.zero_point+8192) % 8192 ;
+    imu1.info.yaw_zero_point = yaw_zero_point_tmp / 8192.0 * 2 * PI;
 
 	BMI088Init(&imu1);
 	imu_list[0] = malloc(sizeof(IMU_TypeDef));
 	memcpy(imu_list[0], &imu1, sizeof(IMU_TypeDef));
-
 }
