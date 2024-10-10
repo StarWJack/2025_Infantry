@@ -8,6 +8,8 @@ osMessageQueueId_t chassis_MQ_handel;
 osMessageQueueId_t chassis_RMQ_handel;
 osThreadId_t chassis_task_handel;
 void ChassisTask(void *arguement);
+
+#if INFANTRY
 /*
  * @brief  	全向轮解算
  * @param	底盘控制结构体指针
@@ -47,6 +49,70 @@ float ChassisGetOmega(Motor_TypeDef *motor[4])
     ret = ret*(WHEEL_RADIUS/CHASSIS_RADIUS);
     return ret;
 }
+#endif
+
+#if HERO
+//TODO(GUATAI)后续修改底盘解算方向与步兵一致
+/*
+ * @brief  	麦轮运动学逆解算(3508电机)
+ * @param	底盘控制结构体指针
+ * @retval 	float[4], 各轮角速度
+ * @note:   仅考虑麦轮俯视打叉，仰视画圆且轴长不等的情况
+ */
+void Mecanum_Solve(Chassis_CmdTypedef *cmd, float *ret)
+{
+//		/*         vx
+//		      ^
+//		      |
+//		 ||       ||
+//		0//       \\1		  (-1  1 a+b)     (w0)
+//		 || \   / ||		  ( 1  1 a+b)(vx) (w1)
+//	vy<--    top           1/s(         )(vy)=(  )
+//		 || /   \ ||		  ( 1 -1 a+b)(wz) (w2)
+//		3\\       //2		  (-1 -1 a+b)     (w3)
+//		 ||       ||
+//		 */
+	ret[0] = -(cmd->vx - cmd->vy + cmd->omega_z * 0.5 * (Length + Width)) * 60
+			/ (2 * Wheel_radius * PI) * 3591 / 187;
+	ret[1] = (cmd->vx + cmd->vy - cmd->omega_z * 0.5 * (Length + Width)) * 60
+			/ (2 * Wheel_radius * PI) * 3591 / 187;
+	ret[2] = (cmd->vx - cmd->vy - cmd->omega_z * 0.5 * (Length + Width)) * 60
+			/ (2 * Wheel_radius * PI) * 3591 / 187;
+	ret[3] = -(cmd->vx + cmd->vy + cmd->omega_z * 0.5 * (Length + Width)) * 60
+			/ (2 * Wheel_radius * PI) * 3591 / 187;
+}
+
+/*
+ * @brief  	麦轮运动学正解算
+ * @param	底盘四电机结构体指针，顺序1-4
+ * @retval 	底盘自旋速度，rps
+ * @todo    按需增加对里程的解算
+ */
+float Chassis_Get_Mecanum(motor_t *motor[4])
+{
+//		/*         vx       vx=(-w0+w1+w2-w3)*s/4
+//		      ^				vy=(w0+w1-w2-w3)*s/4
+//		      |				wz=(w0+w1+w2+w3)/a+b*s/4
+//		 ||       ||
+//		0//       \\1		 						   (w0)
+//		 || \   / ||		  ( -1      1    1    -1  )(w1) (vx)
+//	vy<--             top  s/4(  1      1   -1    -1  )(  )=(vy)
+//		 || /   \ ||		  (1/a+b 1/a+b 1/a+b 1/a+b)(w2) (wz)
+//		3\\       //2								   (w3)
+//		 ||       ||
+//		 */
+	float ret = 0;
+	for (int i = 0; i < 4; i++)
+		ret += Motor_Get_Val(motor[i], ORIGIN) / 60;	//RPM to RPS
+	ret = (ret * 187.0 / 3591.0) / 4;	//转换到输出端转速
+	ret = ret * 0.5 * (Length + Width);
+	return ret;
+//	PID_Origin(&PID_Motor_Angle[Chassis_Angle_ID], Motor[Motor_Yaw_ID].angle, 0);
+//	//底盘角度环,以底盘与云台的相对角度为输入
+//	omega = PID_Motor_Angle[Chassis_Angle_ID].Output;
+}
+#endif
+
 
 void ChassisInit(void)
 {
@@ -78,7 +144,12 @@ void ChassisTask(void *arguement)
             for(int i=0;i<4;i++)
                 MotorSetTar(chs_list[i], solve[i], ABS);
         }
-        ret = ChassisGetOmega(chs_list);
+#if INFANTRY
+		ret = ChassisGetOmega(chs_list);
+#endif
+#if HERO
+		ret = Chassis_Get_Mecanum(chs_list);
+#endif
         osMessageQueuePut(chassis_RMQ_handel, &ret, NULL, 0);
         osDelay(CHASSIS_TASK_PERIOD);
     }
