@@ -1,4 +1,5 @@
 #include "pid.h"
+
 /*
  * @brief  	位置式pid控制器
  * @param
@@ -10,28 +11,38 @@
  */
 float PID_Origin(PID_TypeDef *hpid, float val_now, float target_now)
 {
-
 	hpid->Err_now = target_now - val_now;
-    float Output;
+	float Output;
+#if TEST_D
+    if(hpid->Err_now<hpid->Dead_Band)
+    {
+#else
+#endif
+        hpid->Err_sum += hpid->Err_now;
+        if (hpid->Err_sum < -hpid->Err_sum_Max) hpid->Err_sum = -hpid->Err_sum_Max;
+        if (hpid->Err_sum > hpid->Err_sum_Max) hpid->Err_sum = hpid->Err_sum_Max;
 
-	hpid->Err_sum += hpid->Err_now;
-    if(hpid->Err_sum < -hpid->Err_sum_Max) hpid->Err_sum = -hpid->Err_sum_Max;
-	if(hpid->Err_sum > hpid->Err_sum_Max) hpid->Err_sum = hpid->Err_sum_Max;
+        Output = hpid->Kp * hpid->Err_now + hpid->Ki * hpid->Err_sum
+                 + (hpid->Kd) * (hpid->Err_now - hpid->Err_last);
 
-	Output = hpid->Kp*hpid->Err_now + hpid->Ki*hpid->Err_sum
-			+ (hpid->Kd)*(hpid->Err_now - hpid->Err_last);
+        Output += hpid->Kf * (Output - hpid->Output_last);//前馈
 
-    Output += hpid->K*(Output - hpid->Output_last);//前馈
-
-    if(Output > hpid->Output_Max)
-		Output = hpid->Output_Max;
-	if(Output < -hpid->Output_Max )
-		Output = -hpid->Output_Max;
-
-	hpid->Err_former = hpid->Err_last;
-	hpid->Err_last = hpid->Err_now;
-    hpid->Output_last = Output;
-
+        if (Output > hpid->Output_Max)
+            Output = hpid->Output_Max;
+        if (Output < -hpid->Output_Max)
+            Output = -hpid->Output_Max;
+#if TEST_D
+    }
+    else
+	{
+		hpid->Err_sum=0;
+        Output=0;
+	}
+#else
+#endif
+        hpid->Err_former = hpid->Err_last;
+        hpid->Err_last = hpid->Err_now;
+        hpid->Output_last = Output;
 
     return Output;
 }
@@ -47,12 +58,28 @@ float PID_Origin(PID_TypeDef *hpid, float val_now, float target_now)
 float PID_Incr(PID_TypeDef *hpid, float val_now, float target_val_now)
 {
 	hpid->Err_now = target_val_now - val_now;
-    float Output;
-    Output = hpid->Kp*(hpid->Err_now - hpid->Err_last) + hpid->Ki*(hpid->Err_now) + hpid->Kd*(hpid->Err_now - hpid->Err_last - hpid->Err_diff);
-	if(Output > hpid->Output_Max) Output = hpid->Output_Max;
-	if(Output < -hpid->Output_Max) Output = -hpid->Output_Max;
-	hpid->Err_diff = hpid->Err_now - hpid->Err_last;
-	hpid->Err_last = hpid->Err_now;
+	float Output;
+#if TEST_D
+    if(hpid->Err_now<hpid->Dead_Band)
+    {
+#else
+#endif
+        Output = hpid->Kp * (hpid->Err_now - hpid->Err_last) + hpid->Ki * (hpid->Err_now) +
+                 hpid->Kd * (hpid->Err_now - hpid->Err_last - hpid->Err_diff);
+        if (Output > hpid->Output_Max) Output = hpid->Output_Max;
+        if (Output < -hpid->Output_Max) Output = -hpid->Output_Max;
+        hpid->Err_diff = hpid->Err_now - hpid->Err_last;
+        hpid->Err_last = hpid->Err_now;
+#if TEST_D
+    }
+    else
+	{
+		hpid->Err_sum=0;
+        Output=0;
+	}
+#else
+#endif
+
     return Output;
 }
 
@@ -72,4 +99,8 @@ void PID_Clear(PID_TypeDef *hpid)
     hpid->Err_last = 0;
     hpid->Err_now = 0;
     hpid->Err_sum = 0;
+#if TEST_D
+    hpid->Dead_Band=0.0f;
+#else
+#endif
 }
