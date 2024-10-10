@@ -1,12 +1,33 @@
 #ifndef __PID_H__
 #define __PID_H__
 #include "main.h"
+
+//TODO(GUATAI)死区处理操作待测试
+#define TEST_D 0
+//TODO(GUATAI)前馈待测试
+#define TEST_F 0
+
+/*
+ * 先暂时T:采样周期0.01s(10ms)
+ * (根据输出大小调整合适单位)
+ * 假设角速度/力矩：G(s)=1/(s+1)
+ * 则前馈环节：Gf(s)=s+1
+ *
+ * ①输出：f_out=target'+(input-last_input)/T+input
+ * input=(fliter(error))(t)即f_out=(input-last_input)/T+input
+ * 从而f_out+pid_out=out,对时间积分(out)=output,输出output
+ * 综上似乎拖慢了计算过程，待简化
+ * &&
+ * ②输出：f_out=kf*Err_now
+ */
+
 typedef struct __PID_TypeDef
 {
 	float Kp;
 	float Ki;
 	float Kd;
-    float K;//前馈系数
+    float Kf;//前馈系数
+    float T;//采样时间（任务运行周期）
 	float Err_former;
 	float Err_last;
 	float Err_now;
@@ -15,7 +36,10 @@ typedef struct __PID_TypeDef
 	float Output_Max;
 	float Err_sum_Max;
     float Output_last;
-
+#if TEST_D
+    float Dead_Band;
+#else
+#endif
 }PID_TypeDef;
 
 typedef enum
