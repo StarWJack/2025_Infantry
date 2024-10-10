@@ -1,12 +1,14 @@
 #ifndef __PID_H__
 #define __PID_H__
+
 #include "main.h"
 
 //TODO(GUATAI)死区处理操作待测试
 #define TEST_D 0
 //TODO(GUATAI)前馈待测试
 #define TEST_F 0
-
+//TODO(GUATAI)其它优化PID函数待测试
+#define TEST_I 0
 /*
  * 先暂时T:采样周期0.01s(10ms)
  * (根据输出大小调整合适单位)
@@ -21,13 +23,17 @@
  * ②输出：f_out=kf*Err_now
  */
 
-typedef struct __PID_TypeDef
-{
+typedef struct __PID_TypeDef {
 	float Kp;
 	float Ki;
 	float Kd;
-    float Kf;//前馈系数
-    float T;//采样时间（任务运行周期）
+	float Kf;//前馈系数
+#if TEST_I
+	float dt;
+	uint32_t DWT_cnt;
+#else
+	float T;//采样时间（任务运行周期）
+#endif
 	float Err_former;
 	float Err_last;
 	float Err_now;
@@ -35,24 +41,30 @@ typedef struct __PID_TypeDef
 	float Err_diff;
 	float Output_Max;
 	float Err_sum_Max;
-    float Output_last;
-#if TEST_D
-    float Dead_Band;
+#if TEST_I
+	float Output;
+	float Output_LPF_RC;     // 输出滤波器 RC = 1/omegac
 #else
 #endif
-}PID_TypeDef;
+	float Output_last;
+#if TEST_D
+	float Dead_Band;
+#else
+#endif
+} PID_TypeDef;
 
-typedef enum
-{
-    ANGLE = 0,          //速度环，使用增量式
-    SPEED = 1,         //角度环，使用原始位置式
-    DUAL_LOOP,   //双环控制，外环角度内环速度
-    IMU,
+typedef enum {
+	ANGLE = 0,          //速度环，使用增量式
+	SPEED = 1,         //角度环，使用原始位置式
+	DUAL_LOOP,   //双环控制，外环角度内环速度
+	IMU,
 	AMMO
-}PID_Type_e;
+} PID_Type_e;
 
 extern float PID_Origin(PID_TypeDef *hpid, float val_now, float target_now);
+
 extern float PID_Incr(PID_TypeDef *hpid, float val_now, float target_val_now);
+
 extern void PID_Clear(PID_TypeDef *hpid);
 
 #endif

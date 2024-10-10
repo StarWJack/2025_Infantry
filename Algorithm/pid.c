@@ -1,5 +1,21 @@
 #include "pid.h"
 
+#if TEST_I
+//TODO(GUATAI)需要进一步联动看门狗
+float DWT_GetDeltaT(uint32_t *cnt_last)
+{
+	float dt= 0.0f;
+	return dt;
+}
+// 输出滤波
+static void f_Output_Filter(PID_TypeDef *hpid)
+{
+	hpid->dt=DWT_GetDeltaT(&hpid->DWT_cnt);
+	hpid->Output = hpid->Output * hpid->dt / (hpid->Output_LPF_RC + hpid->dt) +
+				  hpid->Output_last * hpid->Output_LPF_RC / (hpid->Output_LPF_RC + hpid->dt);
+}
+#else
+#endif
 /*
  * @brief  	位置式pid控制器
  * @param
