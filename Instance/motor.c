@@ -328,7 +328,7 @@ void MotorInit()
     .Kp = 22.81f,
     .Ki = 0.004423f,
     .Kd = 15.0f,
-    .K = 0.1f,
+    .Kf = 0.1f,
     .Output_Max = 12000,
     .Err_sum_Max = 5000
     };
@@ -339,7 +339,7 @@ void MotorInit()
     .Kp = 15.0f,
     .Ki = 400,
     .Kd = 1.50f,
-    .K = 0.0f,
+    .Kf = 0.0f,
     .Output_Max = 12000,
     .Err_sum_Max = 10000
     };
@@ -369,7 +369,7 @@ void MotorInit()
     pid_outer.Kp = 600;
     pid_outer.Ki = 4;
     pid_outer.Kd = 0;
-    pid_outer.K = 0;
+    pid_outer.Kf = 0;
     init.pid_outer = pid_outer;
     pid_inner.Kp = 300;
     pid_inner.Ki = 100;
