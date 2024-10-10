@@ -1,7 +1,12 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+//普通兵种代码框架，根据车体选择，同时为1应会报错
+//默认为步兵
+#define HERO 0
+#define INFANTRY 1
 //电机
+#if INFANTRY
 #define MOTOR_NUM 9     //电机总数
 #define MOTOR_YAW 1     //电机列表索引测试用
 #define MOTOR_PITCH 0
@@ -20,6 +25,29 @@
 #define CAN_NUM 2           //CAN控制器数量
 #define USE_CAN2 0        //若使用CAN2，取消注释
 #define TOPIC_NUM 0
+#endif
+
+#if HERO
+//TODO(GUATAI)英雄实例数据
+#define MOTOR_NUM 10     //电机总数
+#define MOTOR_YAW 1     //电机列表索引测试用
+#define MOTOR_PITCH 0
+#define MOTOR_CHS_1 2   //chassis motor
+#define MOTOR_CHS_2 3
+#define MOTOR_CHS_3 4
+#define MOTOR_CHS_4 5
+#define MOTOR_AMMO 6    //ammofeeder motor  ID=7
+#define MOTOR_SHT_L 7   //left shooter motor ID=2,1
+#define MOTOR_SHT_R 8   //right shooter motor ID
+#define MOTOR_SHT_U 9   //up shooter motor ID
+
+//CAN
+#define CAN_HEADER_NUM 2    //CAN标识符数量
+#define CAN_INST_NUM 9      //CAN设备总数
+#define CAN_NUM 2           //CAN控制器数量
+#define USE_CAN2 0        //若使用CAN2，取消注释
+#define TOPIC_NUM 0
+#endif
 
 //IMU
 #define IMU_NUM 1
@@ -49,9 +77,11 @@
 // #define USE_REMOTE_KEYBORAD 1    //若使用遥控器传输键鼠数据，取消注释
 
 //车体数据
+#if INFANTRY
 #define WHEEL_RADIUS 0.075f  //底盘车轮半径, 米
 #define CHASSIS_RADIUS 0.214f
 #define FRICTION_RADIUS 0.03	//摩擦轮半径
+#endif
 
 /*步兵1*/
 //#define PITCH_UP_BOUND	2*PI*4600/8192.0
@@ -62,6 +92,13 @@
 #define PITCH_UP_BOUND	2*PI*7540/8192.0f
 #define PITCH_LW_BOUND  2*PI*400/8192.0f	//pitch轴可动范围上下界
 #define CHASSIS_ZEROPOINT   7851	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
+
+#if HERO
+//TODO(GUATAI)英雄数据待更新
+#define PITCH_UP_BOUND	2*PI*7200/8192.0f
+#define PITCH_LW_BOUND  2*PI*6250/8192.0f	//pitch轴可动范围上下界
+#define CHASSIS_ZEROPOINT   7872	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
+#endif
 
 //性能
 #define SHOOT_FREQ 3    //射频, hz
