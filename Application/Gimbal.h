@@ -7,20 +7,21 @@
 typedef enum
 {
     STOP = 0,
-    SEMI_AUTO = 1,
-    FULL_AUTO = 2
-}shooter_e;
+    AUTO = 1,//火控
+    FULL = 2,//泼水
+    TEST = 3//测试 小拨盘上下发弹
+}shooter_strategy_e;//开火策略
 
 
 typedef struct
 {
-    shooter_e shooter;
-    uint8_t frictiongear;
+    shooter_strategy_e shooter;
+    uint8_t friction_state;//摩擦轮状态:0-关闭，1-开启
     float pitch;
     float yaw;
     float v_yaw;
     float v_pitch;
-    float omega_z;   //spin clockwise from above when positive 
+    float omega_z;   //spin clockwise from above when positive正值时从上方顺时针旋转
 }__attribute__((__packed__))Gimbal_CmdTypedef;
 
 

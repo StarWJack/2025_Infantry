@@ -46,7 +46,8 @@
 #define  KEYBOARD_PITCH_SEN 0.001f
 
 //控制器
-// #define USE_REMOTE_KEYBORAD 1    //若使用遥控器传输键鼠数据，取消注释
+//#define USE_REMOTE_KEYBORAD     //若使用遥控器传输键鼠数据，取消注释
+//#define USE_KEYBOARD              //若使用键盘传输数据，取消注释
 
 //车体数据
 #define WHEEL_RADIUS 0.075f  //底盘车轮半径, 米
@@ -59,17 +60,18 @@
 //#define CHASSIS_ZEROPOINT   7900	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
 
 /*步兵2*/
-#define PITCH_UP_BOUND	2*PI*7540/8192.0f
+#define PITCH_UP_BOUND	2*PI*7708/8192.0f
 #define PITCH_LW_BOUND  2*PI*400/8192.0f	//pitch轴可动范围上下界
-#define CHASSIS_ZEROPOINT   7851	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
-
+#define PITCH_MID       2*PI*34/8192.0f  //pitch轴中间位置
+#define CHASSIS_ZEROPOINT   7851.0f	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
+#define AMMO_DIR_INV //拨弹盘为顺时针旋转
 //性能
 #define SHOOT_FREQ 3    //射频, hz
 #define BULLET_V 10     //弹速, m/s
 #define MOTORSPEED_DIFF 2.0f //弹速差异，m/s
 #define CALIBRATE 1     //弹速校准比率
 #define CHS_SPEED_LMT   2.0f
-#define CHS_SPIN_LMT    2*PI
+#define CHS_SPIN_LMT    2*PI //底盘自旋速度
 
 //other
 #define ABS 0
