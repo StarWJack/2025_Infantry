@@ -10,11 +10,11 @@
 
 //0为关闭
 //TODO(GUATAI)其它优化PID函数以及前馈待测试
-#define TEST_I 1
+#define TEST_I 0
 //TODO(GUATAI)死区处理操作待测试
-#define TEST_D 1
+#define TEST_D 0
 //TODO(GUATAI)输入处理待测试
-#define TEST_R 1
+#define TEST_R 0
 /*
  * 先暂时T:采样周期0.01s(10ms)
  * (根据输出大小调整合适单位)

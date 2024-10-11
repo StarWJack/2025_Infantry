@@ -58,10 +58,9 @@
 
 //freeRTOS任务周期
 #define CONTROL_TASK_PERIOD 10   //freeRTOS执行周期, ms
-#define GIMBAL_TASK_PERIOD 10 
+#define GIMBAL_TASK_PERIOD 10
 #define CHASSIS_TASK_PERIOD 10
-#define CANBUS_TASK_PERIOD 1 
-
+#define CANBUS_TASK_PERIOD 1
 
 //遥控器灵敏度设置
 #define REMOTE_YAW_SEN 0.000004f
@@ -80,7 +79,7 @@
 #if INFANTRY
 #define WHEEL_RADIUS 0.075f  //底盘车轮半径, 米
 #define CHASSIS_RADIUS 0.214f
-#define FRICTION_RADIUS 0.03	//摩擦轮半径
+#define FRICTION_RADIUS 0.03    //摩擦轮半径
 #endif
 
 /*步兵1*/
@@ -89,9 +88,9 @@
 //#define CHASSIS_ZEROPOINT   7900	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
 
 /*步兵2*/
-#define PITCH_UP_BOUND	2*PI*7540/8192.0f
-#define PITCH_LW_BOUND  2*PI*400/8192.0f	//pitch轴可动范围上下界
-#define CHASSIS_ZEROPOINT   7851	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
+#define PITCH_UP_BOUND    2*PI*7540/8192.0f
+#define PITCH_LW_BOUND  2*PI*400/8192.0f    //pitch轴可动范围上下界
+#define CHASSIS_ZEROPOINT   7851    //在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
 
 #if HERO
 //TODO(GUATAI)英雄数据待更新
