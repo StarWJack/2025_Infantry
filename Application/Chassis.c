@@ -7,6 +7,7 @@
 osMessageQueueId_t chassis_MQ_handel;
 osMessageQueueId_t chassis_RMQ_handel;
 osThreadId_t chassis_task_handel;
+ChassisPID_InitTypedef chassis_pid;
 void ChassisTask(void *arguement);
 /*
  * @brief  	全向轮解算
@@ -14,7 +15,7 @@ void ChassisTask(void *arguement);
  * @retval 	float[4], 各轮角速度
  * @note:   仅考虑全向轮安装角为45°且轴长相等的情况
  */
-void OnmiSolve(Chassis_CmdTypedef *cmd, float *ret)
+void OnmiSolve(Chassis_CmdTypedef *cmd, float *ret,float omega_z)
 {
     /*         vx
                 ^
@@ -26,10 +27,10 @@ void OnmiSolve(Chassis_CmdTypedef *cmd, float *ret)
            4\\      //3
                         
     */
-    ret[0] = (cmd->omega_z * (2*PI*CHASSIS_RADIUS) - (-cmd->vx - cmd->vy) * SQRT_2) / WHEEL_RADIUS;
-    ret[1] = (cmd->omega_z * (2*PI*CHASSIS_RADIUS) - (cmd->vx - cmd->vy) * SQRT_2) / WHEEL_RADIUS;
-    ret[2] = (cmd->omega_z * (2*PI*CHASSIS_RADIUS) - (cmd->vx + cmd->vy) * SQRT_2) / WHEEL_RADIUS;
-    ret[3] = (cmd->omega_z * (2*PI*CHASSIS_RADIUS) - (-cmd->vx + cmd->vy) * SQRT_2) / WHEEL_RADIUS;
+    ret[0] = (omega_z * (2*PI*CHASSIS_RADIUS) - (-cmd->vx - cmd->vy) * SQRT_2) / WHEEL_RADIUS;
+    ret[1] = (omega_z * (2*PI*CHASSIS_RADIUS) - (cmd->vx - cmd->vy) * SQRT_2) / WHEEL_RADIUS;
+    ret[2] = (omega_z * (2*PI*CHASSIS_RADIUS) - (cmd->vx + cmd->vy) * SQRT_2) / WHEEL_RADIUS;
+    ret[3] = (omega_z * (2*PI*CHASSIS_RADIUS) - (-cmd->vx + cmd->vy) * SQRT_2) / WHEEL_RADIUS;
 }
 /*
  * @brief  	全向轮逆解算(3508电机)
@@ -56,7 +57,7 @@ void ChassisInit(void)
     chassis_RMQ_handel = osMessageQueueNew(3, sizeof(float), &msg_attr);
     osThreadAttr_t task_attr = {.name = "ChassisTask"};
     chassis_task_handel = osThreadNew(ChassisTask, NULL, &task_attr);
-    MotorStatusChange(motor_list[MOTOR_CHS_1], SPEED, NULL);
+//    MotorStatusChange(motor_list[MOTOR_CHS_1], SPEED, NULL);//?
 }
 
 void ChassisTask(void *arguement)
@@ -68,17 +69,19 @@ void ChassisTask(void *arguement)
     for(;;)
     {
         osMessageQueueGet(chassis_MQ_handel, &cmd, NULL, 0);
-        if(cmd.stop==1)
-        {
-            memset(solve, 0, 4*sizeof(float));
-        }
-        else
-        {
-            OnmiSolve(&cmd, solve);
-            for(int i=0;i<4;i++)
-                MotorSetTar(chs_list[i], solve[i], ABS);
-        }
         ret = ChassisGetOmega(chs_list);
+        if(cmd.mode == SPIN)
+        {
+            chassis_pid.output = PID_Incr(&chassis_pid.pid_inner, CHS_SPIN_LMT, ret);
+        }
+        else if(cmd.mode == FOLLOW)
+        {
+            chassis_pid.output = PID_Origin(&chassis_pid.pid_outer, MotorGetVal(motor_list[MOTOR_YAW],ORIGIN), CHASSIS_ZEROPOINT);
+            chassis_pid.output = PID_Incr(&chassis_pid.pid_inner, ret, chassis_pid.output);
+        }
+        OnmiSolve(&cmd, solve,chassis_pid.output);
+        for(int i=0;i<4;i++)
+            MotorSetTar(chs_list[i], solve[i], ABS);
         osMessageQueuePut(chassis_RMQ_handel, &ret, NULL, 0);
         osDelay(CHASSIS_TASK_PERIOD);
     }
