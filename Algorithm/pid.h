@@ -23,7 +23,7 @@ typedef enum
     ANGLE = 0,          //速度环，使用增量式
     SPEED = 1,         //角度环，使用原始位置式
     DUAL_LOOP,   //双环控制，外环角度内环速度
-    IMU,
+    DUAL_LOOP_IMU,
 	AMMO
 }PID_Type_e;
 

@@ -65,8 +65,6 @@ float PID_Incr(PID_TypeDef *hpid, float val_now, float target_val_now)
  */
 void PID_Clear(PID_TypeDef *hpid)
 {
-//	hpid->Output_Max = 0;
-//	hpid->Err_sum_Max = 0;
     hpid->Err_diff = 0;
     hpid->Err_former = 0;
     hpid->Err_last = 0;
