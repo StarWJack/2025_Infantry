@@ -3,6 +3,11 @@
 
 #include "main.h"
 
+//取绝对值
+#ifndef abs
+#define abs(x) ((x > 0) ? x : -x)
+#endif
+
 //TODO(GUATAI)死区处理操作待测试
 #define TEST_D 0
 //TODO(GUATAI)前馈待测试
@@ -23,15 +28,32 @@
  * ②输出：f_out=kf*Err_now
  */
 
-typedef struct __PID_TypeDef {
+typedef struct __PID_TypeDef
+{
 	float Kp;
 	float Ki;
 	float Kd;
-	float Kf;//前馈系数
 #if TEST_I
+	uint8_t  improve;//暂定选项
+	float target;
+	float last_target;
+	float measure;
+	float last_measure;
+	float integral_limit;     // 积分限幅
+	float ci_coefA;             // 变速积分 For Changing Integral
+	float ci_coefB;             // 变速积分 ITerm = Err*((A-abs(err)+B)/A)  when B<|err|<A+B
 	float dt;
 	uint32_t DWT_cnt;
+	float i_error;//积分环节的乘数，相当于之前的Ki*Err_now里面的Err_now
+	float i_term;
+	float p_out;
+	float i_out;
+	float d_out;
+	float d_out_last;
+	float output_LPF_RC;     // 输出滤波器 RC = 1/omegac
+	float derivative_LPF_RC; // 微分滤波器系数
 #else
+	float Kf;//前馈系数
 	float T;//采样时间（任务运行周期）
 #endif
 	float Err_former;
@@ -41,11 +63,8 @@ typedef struct __PID_TypeDef {
 	float Err_diff;
 	float Output_Max;
 	float Err_sum_Max;
-#if TEST_I
+
 	float Output;
-	float Output_LPF_RC;     // 输出滤波器 RC = 1/omegac
-#else
-#endif
 	float Output_last;
 #if TEST_D
 	float Dead_Band;
@@ -53,7 +72,8 @@ typedef struct __PID_TypeDef {
 #endif
 } PID_TypeDef;
 
-typedef enum {
+typedef enum
+{
 	ANGLE = 0,          //速度环，使用增量式
 	SPEED = 1,         //角度环，使用原始位置式
 	DUAL_LOOP,   //双环控制，外环角度内环速度
@@ -61,10 +81,10 @@ typedef enum {
 	AMMO
 } PID_Type_e;
 
-extern float PID_Origin(PID_TypeDef *hpid, float val_now, float target_now);
+extern float PID_Origin( PID_TypeDef *hpid, float val_now, float target_now );
 
-extern float PID_Incr(PID_TypeDef *hpid, float val_now, float target_val_now);
+extern float PID_Incr( PID_TypeDef *hpid, float val_now, float target_val_now );
 
-extern void PID_Clear(PID_TypeDef *hpid);
+extern void PID_Clear( PID_TypeDef *hpid );
 
 #endif
