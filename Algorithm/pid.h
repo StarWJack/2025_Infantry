@@ -5,15 +5,16 @@
 
 //取绝对值
 #ifndef abs
-#define abs(x) ((x > 0) ? x : -x)
+#define abs( x ) ((x > 0) ? x : -x)
 #endif
 
+//0为关闭
+//TODO(GUATAI)其它优化PID函数以及前馈待测试
+#define TEST_I 1
 //TODO(GUATAI)死区处理操作待测试
-#define TEST_D 0
-//TODO(GUATAI)前馈待测试
-#define TEST_F 0
-//TODO(GUATAI)其它优化PID函数待测试
-#define TEST_I 0
+#define TEST_D 1
+//TODO(GUATAI)输入处理待测试
+#define TEST_R 1
 /*
  * 先暂时T:采样周期0.01s(10ms)
  * (根据输出大小调整合适单位)
@@ -28,32 +29,56 @@
  * ②输出：f_out=kf*Err_now
  */
 
+// PID 优化环节使能标志位,通过位与可以判断启用的优化环节;也可以改成位域的形式
+typedef enum
+{
+	PID_IMPROVE_NONE = 0b00000000,                // 0000 0000
+	PID_INTEGRAL_LIMIT = 0b00000001,              // 0000 0001
+	PID_DERIVATIVE_ON_MEASUREMENT = 0b00000010,   // 0000 0010
+	PID_TRAPEZOID_INTEGRAL = 0b00000100,         // 0000 0100
+	PID_Proportional_On_Measurement = 0b00001000, // 0000 1000
+	PID_OUTPUT_FILTER = 0b00010000,                // 0001 0000
+	PID_CHANGING_INTEGRATION_RATE = 0b00100000,     // 0010 0000
+	PID_DERIVATIVE_FILTER = 0b01000000,            // 0100 0000
+	PID_ErrorHandle = 0b10000000,                 // 1000 0000 检测错误
+} PID_improvement_e;
+
 typedef struct __PID_TypeDef
 {
 	float Kp;
 	float Ki;
 	float Kd;
-#if TEST_I
-	uint8_t  improve;//暂定选项
-	float target;
-	float last_target;
-	float measure;
-	float last_measure;
-	float integral_limit;     // 积分限幅
-	float ci_coefA;             // 变速积分 For Changing Integral
-	float ci_coefB;             // 变速积分 ITerm = Err*((A-abs(err)+B)/A)  when B<|err|<A+B
-	float dt;
-	uint32_t DWT_cnt;
-	float i_error;//积分环节的乘数，相当于之前的Ki*Err_now里面的Err_now
+	float Kf;//前馈系数
+
 	float i_term;
 	float p_out;
 	float i_out;
 	float d_out;
+#if TEST_I
+	PID_improvement_e improve;//PID开启优化选项
+	float target;
+	float last_target;
+	float measure;
+	float last_measure;
+	float ci_coefA;             // 变速积分 For Changing Integral
+	float ci_coefB;             // 变速积分 ITerm = Err*((A-abs(err)+B)/A)  when B<|err|<A+B
+	float dt;
+	uint32_t DWT_cnt;
 	float d_out_last;
 	float output_LPF_RC;     // 输出滤波器 RC = 1/omegac
 	float derivative_LPF_RC; // 微分滤波器系数
+#if TEST_D
+	float Dead_Band;
 #else
-	float Kf;//前馈系数
+#endif
+#if TEST_R
+	float *ref_p; //设定值
+	float *fab_p; //反馈值
+	float target_change_max;
+	float input_LPF_RC;//输入滤波系数
+#else
+#endif
+#else
 	float T;//采样时间（任务运行周期）
 #endif
 	float Err_former;
@@ -66,10 +91,8 @@ typedef struct __PID_TypeDef
 
 	float Output;
 	float Output_last;
-#if TEST_D
-	float Dead_Band;
-#else
-#endif
+	float integral_limit;     // 积分限幅
+
 } PID_TypeDef;
 
 typedef enum
