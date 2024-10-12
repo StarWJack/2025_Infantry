@@ -18,7 +18,7 @@ typedef struct
     Motor_e motor_type;
     uint8_t enable;
     float output_max;
-    uint16_t zero_point;
+    float zero_point;
 }Motor_InfoTypeDef;
 
 typedef struct
@@ -55,9 +55,11 @@ typedef struct
     uint8_t list_id; 
     CAN_HandleTypeDef *hcan;
     Motor_e motor_type;
-    float opt_max;
+    float output_max;
     float *source;      //source of ref in outer pid loop, valid only when pid_type='IMU'
 }Motor_InitTypedef;
+extern float data_view[10] ;
+
 
 extern void MotorOptLmt(Motor_TypeDef *motor, float lmt);
 extern void MotorStatusChange(Motor_TypeDef *motor, PID_Type_e newtype, float *source);
@@ -68,6 +70,6 @@ extern float MotorGetVal(Motor_TypeDef *motor, uint8_t style);
 extern uint8_t MotorSetZeroPoint(Motor_TypeDef *motor);
 extern void MotorStop(Motor_TypeDef *motor);
 extern void MotorRestart(Motor_TypeDef *motor);
-
+extern void MotorAllEnabled(void);
 extern Motor_TypeDef *motor_list[];
 #endif

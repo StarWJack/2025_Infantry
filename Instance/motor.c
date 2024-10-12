@@ -7,11 +7,11 @@
 #include "can.h"
 #include "ErrorHandel.h"
 #include "malloc.h"
+#include "Chassis.h"
 
 
 Motor_TypeDef *motor_list[MOTOR_NUM];
 
-void MotorRegist(Motor_InitTypedef st);
 /*
  * @brief  	计算PID并限幅
  * @param	电机结构体指针数组
@@ -20,20 +20,19 @@ void MotorRegist(Motor_InitTypedef st);
  */
 void MotorCalc(void)
 {
+    static float val_last=0;
     for(int i=0;i<MOTOR_NUM;i++)
     {
+
         if(motor_list[i]->info.enable == 0)
         {
             motor_list[i]->output = 0;
             continue;
         }
         PID_Type_e type = motor_list[i]->info.pid_type;
-        float val_now;
-        val_now = MotorGetVal(motor_list[i], RAD);
+        float val_now = MotorGetVal(motor_list[i], RAD);
         float *tar_now;
-        float static val_last=0;
         tar_now = &motor_list[i]->target;
-        
         if(type == SPEED)
         {
         	float tar_tmp = 0;
@@ -63,33 +62,33 @@ void MotorCalc(void)
                 if(*tar_now - val_now > PI) *tar_now -= 2*PI;
                 if(val_now - *tar_now > PI) *tar_now += 2*PI;
             }
-
             motor_list[i]->output = PID_Origin(&(motor_list[i]->pid[ANGLE]), val_now, *tar_now);
             motor_list[i]->output = PID_Incr(&(motor_list[i]->pid[SPEED]), 2*PI*motor_list[i]->data.speed/60.0, motor_list[i]->output);
         }
-        else if(type == IMU)
+        else if (type == DUAL_LOOP_IMU)
         {
-        	val_now = MotorGetVal(motor_list[i], RAD);
-            //多圈转单圈 && 编码转弧度
-            
             if(motor_list[i]->info.motor_type != OTHER)
             {
                 if(*tar_now - val_now > PI) *tar_now -= 2*PI;
                 if(val_now - *tar_now > PI) *tar_now += 2*PI;
             }
-            motor_list[i]->output = PID_Origin(&(motor_list[i]->pid[ANGLE]), val_now, (*tar_now));
-            motor_list[i]->output = PID_Incr(&(motor_list[i]->pid[SPEED]), motor_list[i]->data.speed, (motor_list[i]->output + motor_list[i]->feed_fwd));
-            
+            motor_list[i]->output = PID_Origin(&(motor_list[i]->pid[ANGLE]), val_now, *tar_now);
+            motor_list[i]->output = PID_Incr(&(motor_list[i]->pid[SPEED]), motor_list[i]->data.speed/60.0, motor_list[i]->output);
         }
         else if(type == AMMO)
         {
             //多圈转单圈 && 编码转弧度
-            if(val_now - val_last < 0)
-            	*tar_now = *tar_now>2*PI ? *tar_now-2*PI : *tar_now;
-            val_last = val_now;
+#ifdef AMMO_DIR_INV
+            if(val_now > val_last + 0.005f)
+                 *tar_now = *tar_now < 0 ? *tar_now+2*PI :*tar_now;
+#elif
+            if(val_now +  0.005f < val_last)
+                *tar_now = *tar_now> 2*PI ? *tar_now-2*PI : *tar_now;
+#endif
+
             motor_list[i]->output = PID_Origin(&(motor_list[i]->pid[ANGLE]), val_now, *tar_now);
             motor_list[i]->output = PID_Incr(&(motor_list[i]->pid[SPEED]), motor_list[i]->data.speed, (motor_list[i]->output + motor_list[i]->feed_fwd));
-
+            val_last = val_now;
         }
         else
         	sErrorHandel(OUT_OF_ENUM);
@@ -124,7 +123,7 @@ void MotorStatusChange(Motor_TypeDef *motor, PID_Type_e newtype, float *source)
         motor->value = &(motor->target);
     else if(motor->info.pid_type == DUAL_LOOP)
         motor->value = &(motor->target);
-    else if(motor->info.pid_type == IMU)
+    else if(motor->info.pid_type == DUAL_LOOP_IMU)
         motor->value = source;
     else
         sErrorHandel(OUT_OF_ENUM);
@@ -135,37 +134,32 @@ void MotorStatusChange(Motor_TypeDef *motor, PID_Type_e newtype, float *source)
  * @brief  	获取电机当前值
  * @param	电机结构体地址
  * @param   style=ORIGIN, 读取原始数据；style=RAD, 弧度制
- * @retval 	电机当前值
+ * @retval 	电机当前值/是否过度封装/
  */
 float MotorGetVal(Motor_TypeDef *motor, uint8_t style)
 {
     if(style!=ORIGIN && style!=RAD)
         sErrorHandel(OUT_OF_ENUM);
-    float val;
-
+    float val ;
     if(motor->info.pid_type==ANGLE || motor->info.pid_type==DUAL_LOOP || motor->info.pid_type==AMMO)
         if(style == ORIGIN)
             val = motor->data.angle;
-        else if(motor->info.motor_type==GM6020 || motor->info.motor_type==M2006)
-            val = (((float)motor->data.angle/8192.0f)*2*PI);
         else
-            sErrorHandel(UNEXPECTED);
+            val = (((float)motor->data.angle/8192.0f)*2*PI);
 
     else if(motor->info.pid_type == SPEED)
         if(style == ORIGIN)
             val = motor->data.speed;
         else
-            val = motor->data.speed*2*PI/60;
+            val = motor->data.speed*2*PI/60.0f;//RPM->RPS
 
-    else if(motor->info.pid_type == IMU)
+//TODO:优化取值操作
+    else if(motor->info.pid_type == DUAL_LOOP_IMU)
         if(style == ORIGIN)
-            val = motor->data.angle;
-        else 
-            val = motor->value(motor);
+           val = motor->data.angle;//取电机编码器角度
+        else
+            val = motor->value(motor);//取IMU值
 
-    else
-        sErrorHandel(OUT_OF_ENUM);
-    
     return val;
 }
 
@@ -241,8 +235,8 @@ void MotorSetTar(Motor_TypeDef *motor, float val, uint8_t style)
         motor->target = val;
     else if(style == INCR)
         motor->target += val;
-    else if(style == FEED)
-        motor->feed_fwd = val;
+//    else if(style == FEED)
+//        motor->feed_fwd = val;
     else
         sErrorHandel(OUT_OF_ENUM);
 }
@@ -273,39 +267,51 @@ void MotorStop(Motor_TypeDef *motor)
         PID_Clear(&motor->pid[OUTER]);
     }
 }
-
+//TODO:此函数是否多余
 void MotorRestart(Motor_TypeDef *motor)
 {
-    Motor_TypeDef *m;
+//    Motor_TypeDef *m;
+//    for(int i=0;i<MOTOR_NUM;i++)
+//    {
+//        if(motor==NULL)
+//            m = motor_list[i];
+//        else
+//            m = motor;
+//        PID_Clear(&m->pid[INNER]);
+//        PID_Clear(&m->pid[OUTER]);
+//        MotorSetZeroPoint(m);
+//        if(m->info.motor_type!=OTHER)
+//        {
+//        	if(m->info.pid_type==DUAL_LOOP)
+//        	   MotorSetTar(m, 2*PI*m->info.zero_point/8192.0, ABS);
+//        	else if(m->info.pid_type==IMU)
+//        	   MotorSetTar(m, MotorGetVal(m, RAD), ABS);
+//        }
+//
+//        m->info.enable = 1;
+//        if(motor!=NULL)
+//            return;
+//    }
+//        PID_Clear(&motor->pid[INNER]);
+//        PID_Clear(&motor->pid[OUTER]);
+//        if(motor == motor_list[MOTOR_YAW])
+//            MotorSetTar(motor_list[MOTOR_YAW], MotorGetVal(motor_list[MOTOR_YAW],RAD), ABS);
+//        else if(motor == motor_list[MOTOR_PITCH])
+//            MotorSetTar(motor_list[MOTOR_PITCH], PITCH_LW_BOUND, ABS);
+//        motor->info.enable = 1;
+}
+void MotorAllEnabled(void)
+{
     for(int i=0;i<MOTOR_NUM;i++)
     {
-        if(motor==NULL)
-            m = motor_list[i];
-        else
-            m = motor;
-        PID_Clear(&m->pid[INNER]);
-        PID_Clear(&m->pid[OUTER]);
-        MotorSetZeroPoint(m);
-        if(m->info.motor_type!=OTHER)
-        {
-        	if(m->info.pid_type==DUAL_LOOP)
-        	   MotorSetTar(m, 2*PI*m->info.zero_point/8192.0, ABS);
-        	else if(m->info.pid_type==IMU)
-        	   MotorSetTar(m, MotorGetVal(m, RAD), ABS);
-        }
-
-        m->info.enable = 1;
-        if(motor!=NULL)
-            return;
+        motor_list[i]->info.enable = 1;
     }
-    
 }
-
 
 /*
  * @brief  	获取电机上电零点
  * @param	电机结构体指针
- * @retval 	ret=0: 获取失败    ret=1: 获取成功 
+ * @retval 	ret=0: 获取失败    ret=1: 获取成功
  */
 uint8_t MotorSetZeroPoint(Motor_TypeDef *motor)
 {
@@ -320,41 +326,108 @@ uint8_t MotorSetZeroPoint(Motor_TypeDef *motor)
         return 0;
 }
 
+/*
+ * @brief  	将电机注册至列表
+ * @param	电机初始化结构体
+ * @retval 	无
+ */
+//TODO: 添加对其他电机的支持
+CAN_TxHeaderTypeDef txheader = {
+    .ExtId =   0x0,
+    .IDE = CAN_ID_STD,
+    .RTR = CAN_RTR_DATA,
+    .DLC = 8,
+
+};
+void MotorRegist(Motor_InitTypedef st)
+{
+    txheader.StdId = st.txheader_id;
+    static Motor_TypeDef  motor;
+    motor.can.txheader = txheader;
+    motor.can.rxheader.StdId = st.rxheader_id;
+    motor.can.rxheader.DLC = 8;
+    motor.can.CAN_id = st.can_id;
+    motor.can.FillTxMsg = MotorFillMsg;
+    motor.can.CbkHandel = MotorCanCbk;
+    motor.can.hcan_x = st.hcan;
+
+    Motor_InfoTypeDef info = {
+        .enable = 0,
+        .motor_type = st.motor_type,
+        .output_max = st.output_max,
+        .pid_type = st.pid_type,
+        .zero_point = 0
+    };
+    motor.info = info;
+
+    motor.pid[OUTER] = st.pid_outer;
+    motor.pid[INNER] = st.pid_inner;
+    motor.feed_fwd = 0;
+    if(st.pid_type == DUAL_LOOP_IMU)
+    {
+        if(st.source == NULL)
+            sErrorHandel(NULL_POINTER);
+        else
+            motor.value = st.source;
+    }
+    else
+        motor.value = st.source;    //avoid null pointer
+    motor_list[st.list_id] = malloc(sizeof(Motor_TypeDef));
+    memcpy(motor_list[st.list_id], &motor, sizeof(Motor_TypeDef));
+}
 
 void MotorInit()
 {
-
+//    PID_TypeDef pid_outer = {
+//    .Kp = 15.81f,
+//    .Ki = 0.004423f,
+//    .Kd = 15.0f,
+//    .K = 0,
+//    .Output_Max = 12000,
+//    .Err_sum_Max = 5000
+//    };
     PID_TypeDef pid_outer = {
-    .Kp = 22.81f,
-    .Ki = 0.004423f,
-    .Kd = 15.0f,
-    .K = 0.1f,
+    .Kp = 88,
+    .Ki = 0.05f,
+    .Kd = 28.8f,
+    .K = 0.05f,
     .Output_Max = 12000,
     .Err_sum_Max = 5000
     };
+
 //        .Kp = 3.5f,
 //    .Ki =400,
 //    .Kd = 1.50f,
+//    PID_TypeDef pid_inner = {
+//    .Kp = 2.0f,
+//    .Ki = 10,
+//    .Kd = 1.50f,
+//    .K = 0.0f,
+//    .Output_Max = 12000,
+//    .Err_sum_Max = 10000
+//    };
     PID_TypeDef pid_inner = {
-    .Kp = 15.0f,
-    .Ki = 400,
-    .Kd = 1.50f,
+    .Kp = 3.5f,
+    .Ki = 400.0f,
+    .Kd = 1.5f,
     .K = 0.0f,
     .Output_Max = 12000,
     .Err_sum_Max = 10000
     };
+
     Motor_InitTypedef init = {
     .can_id = 1,
     .hcan = &hcan1,
     .list_id = MOTOR_YAW,
     .motor_type = GM6020,
-    .pid_type = DUAL_LOOP,
+    .pid_type = DUAL_LOOP_IMU,
     .source = MotorGetIMU0_Yaw,
+//    .source = NULL ,
     .txheader_id = 0x1FF,
 	.rxheader_id = 0x205,
     .pid_outer = pid_outer,
     .pid_inner = pid_inner,
-    .opt_max = 10000
+    .output_max = 10000
    };
 
     /* Yaw init */
@@ -366,20 +439,30 @@ void MotorInit()
     init.list_id = MOTOR_PITCH;
     init.pid_type = DUAL_LOOP;
     init.source = NULL;
+//    pid_outer.Kp = 600;
+//    pid_outer.Ki = 4;
+//    pid_outer.Kd = 0;
+//    pid_outer.K = 0;
     pid_outer.Kp = 600;
     pid_outer.Ki = 4;
     pid_outer.Kd = 0;
     pid_outer.K = 0;
     init.pid_outer = pid_outer;
-    pid_inner.Kp = 300;
-    pid_inner.Ki = 100;
+//    pid_inner.Kp = 300;
+//    pid_inner.Ki = 100;
+//    pid_inner.Kd = 0;
+    pid_inner.Kp = 0;
+    pid_inner.Ki = 1000;
     pid_inner.Kd = 0;
     init.pid_inner = pid_inner;
     MotorRegist(init);
 
     /* Chassis init */
-    pid_inner.Kp = 0.01f;
-    pid_inner.Ki = 10;
+//    pid_inner.Kp = 0.05f;
+//    pid_inner.Ki = 10;
+//    pid_inner.Kd = 0.001f;
+    pid_inner.Kp = 0.1f;
+    pid_inner.Ki = 50;
     pid_inner.Kd = 0.001f;
     pid_inner.Err_sum_Max = 1000;
     pid_inner.Output_Max = 5000;
@@ -389,7 +472,7 @@ void MotorInit()
     init.list_id = MOTOR_CHS_1;
     init.motor_type = M3508,
     init.pid_type = SPEED;
-    init.opt_max = 5000;
+    init.output_max = 5000;
     init.txheader_id = 0x200;
 //    .rxheader_id = 0x200 + init.can_id,
     init.rxheader_id = 0x201;
@@ -429,11 +512,11 @@ void MotorInit()
     MotorRegist(init);
 
     //ammofeeder init
-    pid_outer.Kp = 70;
+    pid_outer.Kp = 80;
     pid_outer.Ki = 0.1f;
     pid_outer.Kd = 0;
     pid_outer.Output_Max = 15000;
-    pid_outer.Err_sum_Max = 4000;
+    pid_outer.Err_sum_Max = 1000;
     pid_inner.Kp = 4;
     pid_inner.Ki = 1;
     pid_inner.Kd = 0;
@@ -449,54 +532,24 @@ void MotorInit()
     init.rxheader_id = 0x207;
     MotorRegist(init);
 
+    pid_outer.Kp = 0;
+    pid_outer.Ki = 0;
+    pid_outer.Kd = 0;
+    pid_outer.K = 0;
+    pid_outer.Output_Max = 10;//量程：PI
+    pid_outer.Err_sum_Max = 100;
+
+    pid_inner.Kp = 0;
+    pid_inner.Ki = 0;
+    pid_inner.Kd = 0;
+    pid_inner.K = 0;
+    pid_inner.Output_Max = 5;//量程：RPS
+    pid_inner.Err_sum_Max = 100;
+
+    chassis_pid.pid_inner = pid_inner;
+    chassis_pid.pid_outer = pid_outer;
+
+
+
 }
 
-/*
- * @brief  	将电机注册至列表
- * @param	电机初始化结构体
- * @retval 	无
- */
-//TODO: 添加对其他电机的支持
-CAN_TxHeaderTypeDef txheader = {
-    .ExtId =   0x0,
-    .IDE = CAN_ID_STD,
-    .RTR = CAN_RTR_DATA,
-    .DLC = 8,
-
-};
-void MotorRegist(Motor_InitTypedef st)
-{
-    txheader.StdId = st.txheader_id;
-    Motor_TypeDef static motor;
-    motor.can.txheader = txheader;
-    motor.can.rxheader.StdId = st.rxheader_id;
-    motor.can.rxheader.DLC = 8;
-    motor.can.CAN_id = st.can_id;
-    motor.can.FillTxMsg = MotorFillMsg;
-    motor.can.CbkHandel = MotorCanCbk;
-    motor.can.hcan_x = st.hcan;
-
-    Motor_InfoTypeDef info = {
-        .enable = 0,
-        .motor_type = st.motor_type,
-        .output_max = st.opt_max,
-        .pid_type = st.pid_type,
-        .zero_point = 0
-    };
-    motor.info = info;
-    
-    motor.pid[OUTER] = st.pid_outer;
-    motor.pid[INNER] = st.pid_inner;
-    motor.feed_fwd = 0;
-    if(st.pid_type == IMU)
-    {
-        if(st.source == NULL)
-            sErrorHandel(NULL_POINTER);
-        else
-            motor.value = st.source;
-    }
-    else
-        motor.value = st.source;    //avoid null pointer
-    motor_list[st.list_id] = malloc(sizeof(Motor_TypeDef));
-    memcpy(motor_list[st.list_id], &motor, sizeof(Motor_TypeDef));
-}
