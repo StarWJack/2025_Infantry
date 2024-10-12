@@ -387,10 +387,17 @@ void MotorInit()
 //    .Err_sum_Max = 5000
 //    };
     PID_TypeDef pid_outer = {
+<<<<<<< HEAD
     .Kp = 88,
     .Ki = 0.05f,
     .Kd = 28.8f,
     .K = 0.05f,
+=======
+    .Kp = 22.81f,
+    .Ki = 0.004423f,
+    .Kd = 15.0f,
+    .Kf = 0.1f,
+>>>>>>> origin/master
     .Output_Max = 12000,
     .Err_sum_Max = 5000
     };
@@ -407,10 +414,17 @@ void MotorInit()
 //    .Err_sum_Max = 10000
 //    };
     PID_TypeDef pid_inner = {
+<<<<<<< HEAD
     .Kp = 3.5f,
     .Ki = 400.0f,
     .Kd = 1.5f,
     .K = 0.0f,
+=======
+    .Kp = 15.0f,
+    .Ki = 400,
+    .Kd = 1.50f,
+    .Kf = 0.0f,
+>>>>>>> origin/master
     .Output_Max = 12000,
     .Err_sum_Max = 10000
     };
@@ -446,7 +460,7 @@ void MotorInit()
     pid_outer.Kp = 600;
     pid_outer.Ki = 4;
     pid_outer.Kd = 0;
-    pid_outer.K = 0;
+    pid_outer.Kf = 0;
     init.pid_outer = pid_outer;
 //    pid_inner.Kp = 300;
 //    pid_inner.Ki = 100;
