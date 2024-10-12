@@ -12,3 +12,4 @@
 *.bin
 *.elf
 *.hex
+/2025InfantryEMBED Debug.cfg
