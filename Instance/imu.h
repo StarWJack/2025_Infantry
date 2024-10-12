@@ -31,7 +31,7 @@ typedef struct
 {
     IMU_enum imu_type;
     Protocol_enum p_type;
-    float yaw_zero_point;
+    float yaw_zero_point;//云台yaw轴零点（上电时刻指向底盘正方向）
     float bias_g1;
     float bias_g2;
     float bias_a1;
@@ -64,6 +64,13 @@ typedef enum
 	accel = 0,
 	gyro = 1
 }accel_or_gyro;
+
+//#define Get_Bias
+
+#ifdef Get_Bias
+extern float  bias[3] ;
+extern uint32_t sum ;
+#endif
 
 extern IMU_TypeDef *imu_list[IMU_NUM];
 extern void BMI088Update(IMU_TypeDef *imu);
