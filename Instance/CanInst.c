@@ -7,7 +7,7 @@ int8_t can_index[CAN_NUM][CAN_HEADER_NUM][9];
 CAN_TxHeaderTypeDef *can_txheader[CAN_HEADER_NUM];
 void CanSendMsg()
 {
-    uint8_t static can_txdata[8];
+    static uint8_t can_txdata[8];
     for(int i=0;i<CAN_HEADER_NUM;i++) //遍历所有的header
     {
         memset(can_txdata, 0, sizeof(can_txdata));

@@ -27,7 +27,6 @@
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -37,6 +36,7 @@
 #include "remote.h"
 #include "sin.h"
 #include "ui.h"
+#include "motor.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
