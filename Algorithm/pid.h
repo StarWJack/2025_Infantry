@@ -97,17 +97,10 @@ typedef struct __PID_TypeDef
 
 typedef enum
 {
-<<<<<<< HEAD
     ANGLE = 0,          //速度环，使用增量式
     SPEED = 1,         //角度环，使用原始位置式
     DUAL_LOOP,   //双环控制，外环角度内环速度
     DUAL_LOOP_IMU,
-=======
-	ANGLE = 0,          //速度环，使用增量式
-	SPEED = 1,         //角度环，使用原始位置式
-	DUAL_LOOP,   //双环控制，外环角度内环速度
-	IMU,
->>>>>>> origin/master
 	AMMO
 } PID_Type_e;
 

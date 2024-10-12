@@ -11,7 +11,7 @@
 IMU_TypeDef *imu_list[IMU_NUM];
 uint8_t spi_TxData, spi_RxData;
 
-#if Get_Bias
+#ifdef Get_Bias
 float  bias[3]  = {0,0,0};
 uint32_t sum = 0;
 #endif
@@ -146,7 +146,7 @@ void BMI088Update(IMU_TypeDef *imu)
 		 BMI088ReadAccel(imu);
 	//	 IST8310_read(&imu_data);
 
-#ifndef Get_Bias
+#ifdef Get_Bias
     bias[0]+= imu->gyro[1] ;
     bias[1]+= imu->gyro[2] ;
     bias[2]+= imu->accel[1] ;
@@ -212,7 +212,7 @@ void IMUInit()
     imu1.info.bias_g1 = 0 ;
 	imu1.info.bias_g2 = 0;
 	imu1.info.bias_a1 = 0;
-#elif
+#else
     imu1.info.bias_g1 = -765191 / 50649 /65.536f*(PI/180.0f) ;
 	imu1.info.bias_g2 = 408988 / 50649 /65.536f*(PI/180.0f);
 	imu1.info.bias_a1 = 155383 / 50649 * 0.0008974f;

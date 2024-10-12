@@ -317,18 +317,13 @@ float PID_Incr( PID_TypeDef *hpid, float val_now, float target_val_now )
  */
 void PID_Clear( PID_TypeDef *hpid )
 {
-<<<<<<< HEAD
+
     hpid->Err_diff = 0;
     hpid->Err_former = 0;
     hpid->Err_last = 0;
     hpid->Err_now = 0;
     hpid->Err_sum = 0;
-=======
-	hpid->Err_diff = 0;
-	hpid->Err_former = 0;
-	hpid->Err_last = 0;
-	hpid->Err_now = 0;
-	hpid->Err_sum = 0;
+
 #if TEST_I
 	hpid->target = 0;
 	hpid->last_target = 0;
@@ -342,5 +337,4 @@ void PID_Clear( PID_TypeDef *hpid )
 #endif
 #else
 #endif
->>>>>>> origin/master
 }

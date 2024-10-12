@@ -89,16 +89,13 @@
 //#define CHASSIS_ZEROPOINT   7900	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
 
 /*步兵2*/
-<<<<<<< HEAD
+
 #define PITCH_UP_BOUND	2*PI*7708/8192.0f
 #define PITCH_LW_BOUND  2*PI*400/8192.0f	//pitch轴可动范围上下界
 #define PITCH_MID       2*PI*34/8192.0f  //pitch轴中间位置
 #define CHASSIS_ZEROPOINT   7851.0f	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
 #define AMMO_DIR_INV //拨弹盘为顺时针旋转
-=======
-#define PITCH_UP_BOUND    2*PI*7540/8192.0f
-#define PITCH_LW_BOUND  2*PI*400/8192.0f    //pitch轴可动范围上下界
-#define CHASSIS_ZEROPOINT   7851    //在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
+
 
 #if HERO
 //TODO(GUATAI)英雄数据待更新
@@ -107,7 +104,7 @@
 #define CHASSIS_ZEROPOINT   7872	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
 #endif
 
->>>>>>> origin/master
+
 //性能
 #define SHOOT_FREQ 3    //射频, hz
 #define BULLET_V 10     //弹速, m/s

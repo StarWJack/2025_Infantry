@@ -135,7 +135,7 @@ void ChassisTask(void *arguement)
     for(;;)
     {
         osMessageQueueGet(chassis_MQ_handel, &cmd, NULL, 0);
-<<<<<<< HEAD
+
         ret = ChassisGetOmega(chs_list);
         if(cmd.mode == SPIN)
         {
@@ -149,24 +149,13 @@ void ChassisTask(void *arguement)
         OnmiSolve(&cmd, solve,chassis_pid.output);
         for(int i=0;i<4;i++)
             MotorSetTar(chs_list[i], solve[i], ABS);
-=======
-        if(cmd.stop==1)
-        {
-            memset(solve, 0, 4*sizeof(float));
-        }
-        else
-        {
-            OnmiSolve(&cmd, solve);
-            for(int i=0;i<4;i++)
-                MotorSetTar(chs_list[i], solve[i], ABS);
-        }
+
 #if INFANTRY
 		ret = ChassisGetOmega(chs_list);
 #endif
 #if HERO
 		ret = Chassis_Get_Mecanum(chs_list);
 #endif
->>>>>>> origin/master
         osMessageQueuePut(chassis_RMQ_handel, &ret, NULL, 0);
         osDelay(CHASSIS_TASK_PERIOD);
     }
