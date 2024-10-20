@@ -28,10 +28,10 @@ void BMI088ReadAccel(IMU_TypeDef *imu)
 	HAL_SPI_TransmitReceive(imu->spi.hspi_x, &spi_TxData, &spi_RxData, 1, 300);	//写入�?要读取的地址
 	spi_TxData = 0x55;
 	for(uint8_t i=0;i<6;i++)
-	    {
-			HAL_SPI_TransmitReceive(imu->spi.hspi_x, &spi_TxData, &spi_RxData, 1, 300);
-	        temp_arr[i] = spi_RxData;
-	    }
+    {
+        HAL_SPI_TransmitReceive(imu->spi.hspi_x, &spi_TxData, &spi_RxData, 1, 300);
+        temp_arr[i] = spi_RxData;
+    }
 	imu->accel[0] = (temp_arr[0] + (temp_arr[1] << 8));
 	imu->accel[1] = (temp_arr[2] + (temp_arr[3] << 8));
 	imu->accel[2] = (temp_arr[4] + (temp_arr[5] << 8));
@@ -121,14 +121,14 @@ void BMI088Init(IMU_TypeDef *imu)
         //加速度计初始化
         BMI088WriteByte(imu, 0xB6, 0x7E, accel);            //向0x7E写入0xb6以软件复位加速度计
         BMI088WriteByte(imu, 0x04, 0x7D, accel);            //向0x7D写入0x04以取消加速度计暂停
-        BMI088WriteByte(imu, 0x00,0x41, accel);             //设置量程为±3g
-        BMI088WriteByte(imu, 0x89,0x40 , accel);
+        BMI088WriteByte(imu, BMI088_ACC_RANGE_3G,BMI088_ACC_RANGE, accel);             //设置量程为±3g
+        BMI088WriteByte(imu, ACC_CONF_RESERVED<<7 |ACC_CONF_BWP_OSR4<<6 |ACC_CONF_ODR_1600_Hz,BMI088_ACC_CONF , accel);            //设置频率为1600HZ
 
 	    //陀螺仪初始化
         BMI088WriteByte(imu, 0xB6, 0x14, gyro);             //向0x14写入0xb6以软件复位陀螺仪
         BMI088WriteByte(imu, 0x00,  0x11, gyro);
         BMI088WriteByte(imu, GYRO_RANGE_500_DEG_S, GYRO_RANGE_ADDR, gyro);//±500
-        BMI088WriteByte(imu, GYRO_ODR_200Hz_BANDWIDTH_64Hz, GYRO_BANDWIDTH_ADDR, gyro);
+        BMI088WriteByte(imu, GYRO_ODR_2000Hz_BANDWIDTH_532Hz, GYRO_BANDWIDTH_ADDR, gyro);
 //        sum =0;
 }
 
@@ -159,17 +159,17 @@ void BMI088Update(IMU_TypeDef *imu)
 		 for(int i=0;i<3;i++)
 		 {
 
-				 imu_gyro[i] = (imu->gyro[i])/65.536f*(PI/180.0f);
+				 imu_gyro[i] = (imu->gyro[i])*BMI088_GYRO_500_SEN;
 
-				 imu_accel[i] = imu->accel[i]*0.0008974f;
+				 imu_accel[i] = imu->accel[i]*BMI088_ACCEL_3G_SEN;
 	//		 imu_mag[i] = imu->mag[i]*0.3;
 
 		 }
 		 /***减去零偏值***/
-#ifdef Get_Bias
-		 imu_gyro[1] -= imu->info.bias_g1;
-		 imu_gyro[2] -= imu->info.bias_g2;
-		 imu_accel[1] -= imu->info.bias_a1;
+#ifndef Get_Bias
+//		 imu_gyro[1] -= imu->info.bias_g1;
+//		 imu_gyro[2] -= imu->info.bias_g2;
+//		 imu_accel[1] -= imu->info.bias_a1;
 #endif
 
 
@@ -188,13 +188,13 @@ void BMI088Update(IMU_TypeDef *imu)
 
 float IMUGetPitch(IMU_TypeDef *imu)
 {
-    return imu->angle[2];
+    return imu->angle[2]+PI;
 }
 
 
 float IMUGetYaw(IMU_TypeDef *imu)
 {
-     return imu->angle[0];
+     return imu->angle[0]+PI;
 }
 
 void IMUInit()
@@ -213,9 +213,9 @@ void IMUInit()
 	imu1.info.bias_g2 = 0;
 	imu1.info.bias_a1 = 0;
 #else
-    imu1.info.bias_g1 = -765191 / 50649 /65.536f*(PI/180.0f) ;
-	imu1.info.bias_g2 = 408988 / 50649 /65.536f*(PI/180.0f);
-	imu1.info.bias_a1 = 155383 / 50649 * 0.0008974f;
+    imu1.info.bias_g1 = 1273678 / 107083 *BMI088_GYRO_500_SEN ;
+	imu1.info.bias_g2 = -1790946 / 107083 *BMI088_GYRO_500_SEN;
+	imu1.info.bias_a1 = 10932741 / 107083 * BMI088_ACCEL_3G_SEN;
 #endif
 
 	
