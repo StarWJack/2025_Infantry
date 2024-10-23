@@ -12,6 +12,8 @@
 #include "imu.h"
 #include "vofa.h"
 #include "CanBus.h"
+#include "cmsis_os2.h"
+
 
 
 osThreadId_t control_task_handel;
@@ -93,30 +95,30 @@ void RemoteCtrl(Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 //TODO:添加底盘跟随和小陀螺时云台自稳
 void ControlTask(void *argument)
 {
-//    uint32_t time = osKernelSysTick();
-    Gimbal_CmdTypedef static gimbal_cmd;
-    Chassis_CmdTypedef static chassis_cmd;
-    float static omege_chs;
+    uint32_t time = osKernelGetTickCount();
+//    Gimbal_CmdTypedef static gimbal_cmd;
+//    Chassis_CmdTypedef static chassis_cmd;
+//    float static omege_chs;
     for(;;)
     {
-        imu_list[0]->update(imu_list[0]);
         RemoteCtrl(&gimbal_cmd, &chassis_cmd);
 #ifdef USE_KEYBOARD
         KeyboardCtrl(&gimbal_cmd, &chassis_cmd);
 #endif
         //云台坐标系转底盘坐标系
-        ChassisCmdTrans(&chassis_cmd, CHASSIS_ZEROPOINT, MotorGetVal(motor_list[MOTOR_YAW],ORIGIN));
-        osMessageQueueGet(chassis_RMQ_handel, &omege_chs, NULL, 0);         
-        gimbal_cmd.omega_z = -omege_chs;
-        osMessageQueuePut(gimbal_MQ_handel, &gimbal_cmd, NULL, 0);
-        osMessageQueuePut(chassis_MQ_handel, &chassis_cmd, NULL, 0);
-//        osDelayUntil(time+CONTROL_TASK_PERIOD);
-//        time = osKernelSysTick();
+        ChassisCmdTrans(&chassis_cmd, CHASSIS_ZEROPOINT, MotorGetVal(motor_list[MOTOR_YAW],MOTORANGLE,ORIGIN));
 
-//        WatchDogTask();
-        vofa_demo(motor_list[MOTOR_YAW]->pid[ANGLE].Err_now,motor_list[MOTOR_YAW]->pid[ANGLE].Err_sum,
-                  motor_list[MOTOR_YAW]->output,motor_list[MOTOR_YAW]->target,
-                  motor_list[MOTOR_YAW]->value(motor_list),robo_state);
-        osDelay(CONTROL_TASK_PERIOD);
+////        WatchDogTask();
+//        vofa_demo(motor_list[MOTOR_CHS_1]->pid[SPEED].Err_now,motor_list[MOTOR_CHS_1]->pid[ANGLE].Err_sum,
+//                  motor_list[MOTOR_CHS_1]->output,motor_list[MOTOR_CHS_1]->target,
+//                  MotorGetVal(motor_list[MOTOR_PITCH],IMU,RAD),robo_state
+//                  );
+        vofa_demo(motor_list[MOTOR_CHS_1]->pid[SPEED].Err_now,motor_list[MOTOR_CHS_1]->pid[SPEED].Err_last,
+                  motor_list[MOTOR_CHS_1]->pid[SPEED].Err_former,motor_list[MOTOR_CHS_1]->target,
+                  MotorGetVal(motor_list[MOTOR_CHS_1],MOTORSPEED,RAD),robo_state);
+
+//        osDelay(CONTROL_TASK_PERIOD);
+        time = osKernelGetTickCount();
+        osDelayUntil(time + CONTROL_TASK_PERIOD);
     }
 }
