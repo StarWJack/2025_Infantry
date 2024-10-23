@@ -21,12 +21,15 @@ typedef struct
     float yaw;
     float v_yaw;
     float v_pitch;
-    float omega_z;   //spin clockwise from above when positive正值时从上方顺时针旋转
 }__attribute__((__packed__))Gimbal_CmdTypedef;
 
 
-extern osMessageQueueId_t gimbal_MQ_handel;
+//extern osMessageQueueId_t gimbal_MQ_handel;
+extern osThreadId_t gimbal_task_handel;
+extern Gimbal_CmdTypedef gimbal_cmd;
+
 extern void GimbalTask(void *argument);
+void GimbalPosi_Init(void);
 void GimbalInit(void);
 
 #endif

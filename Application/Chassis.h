@@ -36,21 +36,26 @@ typedef struct
     float vx;
     float vy;
     chassis_mode_e mode;
-    float omega_z;   //spin clockwise from above when positive
+    float omega_z_last;
+    float omega_z_now;
+    float omega_z_tar;
 
 }__attribute__((__packed__))Chassis_CmdTypedef;
 
 typedef struct
 {
+    float target;
     float output;
-    PID_TypeDef pid_outer;
-    PID_TypeDef pid_inner;
-}ChassisPID_InitTypedef;
+    PID_TypeDef pid[2];    //outer(or angle)(0)、inner(or speed)(1) circle
+}__attribute__((__packed__))Chassis_TypeDef;
 
-extern osMessageQueueId_t chassis_MQ_handel;
-extern osMessageQueueId_t chassis_RMQ_handel;
+//extern osMessageQueueId_t chassis_MQ_handel;
+//extern osMessageQueueId_t chassis_RMQ_handel;
 extern osThreadId_t chassis_task_handel;;
-extern ChassisPID_InitTypedef chassis_pid;
+extern Chassis_TypeDef chassis;
+
+extern Chassis_CmdTypedef chassis_cmd;
 
 void ChassisInit(void);
+float ChassisGetOmega(void);
 #endif
