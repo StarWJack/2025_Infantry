@@ -152,7 +152,8 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 	else if(huart->Instance == USART3)
 	{
 		RemoteSolve();
-//		memset(remote_rxbuff, 0, REMOTE_RXBUFF_SIZE);
+        HAL_UARTEx_ReceiveToIdle_DMA(&huart3, remote_rxbuff, REMOTE_RXBUFF_SIZE);
+
 	}
 	else if(huart->Instance == USART6)
 	{
