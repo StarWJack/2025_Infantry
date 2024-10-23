@@ -11,6 +11,21 @@ typedef enum
 	M2006
 }Motor_e;
 
+typedef enum
+{
+    MOTORANGLE,
+    MOTORSPEED,
+    IMU
+}MOTOR_Feedback_e;
+
+//#define ORIGIN 0
+//#define RAD 1
+typedef enum
+{
+    ORIGIN,
+    RAD
+}DataType_e;
+
 typedef struct 
 {
     //TODO: add watchdog
@@ -37,7 +52,8 @@ typedef struct _Motor_TypeDef
     float target;
     /* switching data source accroding to Motor_InfoTypeDef->type
     NOTE: don't read derectly, use MotorGetVal() instead */
-    float (*value)(struct _Motor_TypeDef *st);          
+//    float (*value)(struct imu_s *imu);
+    float (*value)(struct _Motor_TypeDef *st);
     float feed_fwd;        //feedforward when type='IMU'
     float output;
     PID_TypeDef pid[2];    //outer(or angle)(0)、inner(or speed)(1) circle
@@ -65,9 +81,11 @@ extern void MotorOptLmt(Motor_TypeDef *motor, float lmt);
 extern void MotorStatusChange(Motor_TypeDef *motor, PID_Type_e newtype, float *source);
 extern void MotorCalc(void);
 extern void MotorInit(void);
-extern void MotorSetTar(Motor_TypeDef *motor, float tar, uint8_t style);
-extern float MotorGetVal(Motor_TypeDef *motor, uint8_t style);
-extern uint8_t MotorSetZeroPoint(Motor_TypeDef *motor);
+extern void MotorSetTar(Motor_TypeDef *motor, float val, ValSet_Type_e type);
+//extern void MotorSetTar(Motor_TypeDef *motor, float tar, uint8_t style);
+extern float MotorGetVal(Motor_TypeDef *motor,MOTOR_Feedback_e feedback,DataType_e type);
+//extern float MotorGetVal(Motor_TypeDef *motor, uint8_t style);
+//extern uint8_t MotorSetZeroPoint(Motor_TypeDef *motor);
 extern void MotorStop(Motor_TypeDef *motor);
 extern void MotorRestart(Motor_TypeDef *motor);
 extern void MotorAllEnabled(void);
