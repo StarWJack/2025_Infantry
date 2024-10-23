@@ -167,9 +167,9 @@ void BMI088Update(IMU_TypeDef *imu)
 		 }
 		 /***减去零偏值***/
 #ifndef Get_Bias
-//		 imu_gyro[1] -= imu->info.bias_g1;
-//		 imu_gyro[2] -= imu->info.bias_g2;
-//		 imu_accel[1] -= imu->info.bias_a1;
+		 imu_gyro[1] -= imu->info.bias_g1;
+		 imu_gyro[2] -= imu->info.bias_g2;
+		 imu_accel[1] -= imu->info.bias_a1;
 #endif
 
 
@@ -213,9 +213,9 @@ void IMUInit()
 	imu1.info.bias_g2 = 0;
 	imu1.info.bias_a1 = 0;
 #else
-    imu1.info.bias_g1 = 1273678 / 107083 *BMI088_GYRO_500_SEN ;
-	imu1.info.bias_g2 = -1790946 / 107083 *BMI088_GYRO_500_SEN;
-	imu1.info.bias_a1 = 10932741 / 107083 * BMI088_ACCEL_3G_SEN;
+    imu1.info.bias_g1 = -2065790 / 100424 *BMI088_GYRO_500_SEN ;
+	imu1.info.bias_g2 = 682414 / 100424 *BMI088_GYRO_500_SEN;
+	imu1.info.bias_a1 = -277466816 / 100424 * BMI088_ACCEL_3G_SEN;
 #endif
 
 	
