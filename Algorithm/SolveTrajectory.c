@@ -3,12 +3,19 @@
 
 #include <math.h>
 #include <stdio.h>
-#include "main.h"
 #include "SolveTrajectory.h"
+#include "Serial.h"
+#include "referee.h"
 
-struct SolveTrajectory st;
+struct SolveTrajectoryParams st =
+        {
+                .s_bias = 0.05,
+                .z_bias = 0.0
+        };
 struct tar_pos tar_position[4];
+int idx = 0;
 float t = 0.0f; // 飞行时间
+float aim[3];
 
 /*
 @brief 初始化
@@ -17,64 +24,74 @@ float t = 0.0f; // 飞行时间
 @param v:m/s
 @param k:弹道系数
 */
-void GimbalControlInit(float pitch, float yaw, float tar_yaw , float v_yaw, float r1, float r2, float z2, uint8_t armor_type, float v, float k)
+void GimbalControlInit(float pitch, float yaw, float tar_yaw, float v_yaw,
+                        float r1, float r2, float dz, uint8_t armor_num,
+                        float v, float k)
 {
-    st.current_pitch = pitch;
-    st.current_yaw = yaw;
-    st.current_v = v;
-    st._k = k;
-    st.tar_yaw = tar_yaw;
-    st.v_yaw = v_yaw;
-    st.tar_r1 = r1;
-    st.tar_r2 = r2;
-    st.z2 = z2;
-    st.armor_type = armor_type;
-//    printf("init %f,%f,%f,%f\n", st.current_pitch, st.current_yaw, st.current_v, st._k);
+    st . current_pitch = pitch;
+    st . current_yaw = yaw;
+    st . current_v = v;
+    st . k = k;
+    st . tar_yaw = tar_yaw;
+    st . v_yaw = v_yaw;
+    st . r1 = r1;
+    st . r2 = r2;
+    st . dz = dz;
+    st . armor_num = armor_num;
 }
 
 /*
 @brief 弹道模型
-@param x:m 距离
+@param s:m 距离
 @param v:m/s 速度
 @param angle:rad 角度
 @return y:m
 */
-float GimbalControlBulletModel(float x, float v, float angle)
+float GimbalControlBulletModel(float s, float v, float angle)
 {
-    float y;
-    t = (float)((exp(st._k * x) - 1) / (st._k * v * cos(angle)));
-    y = (float)(v * sin(angle) * t - GRAVITY * t * t / 2);
-//    printf("model %f %f\n", t, y);
-    return y;
+    //t为给定v与angle时的飞行时间
+    t = (float) ((expf(st . k * s) - 1) / (st . k * v * cosf(angle)));
+    if(t < 0 || t > 5)
+    {
+        t = 0;
+        return 0;
+    }
+    //z为给定v与angle时的高度
+    float z = (float) (v * sinf(angle) * t - GRAVITY * t * t / 2);
+    return z;
 }
 
 /*
 @brief pitch轴解算
-@param x:m 距离
-@param y:m 高度
+@param s:m 距离
+@param z:m 高度
 @param v:m/s
 @return angle_pitch:rad
 */
-float GimbalControlGetPitch(float x, float y, float v)
+float GimbalControlGetPitch(float s, float z, float v)
 {
-    float y_temp, y_actual, dy;
-    float angle_pitch;
-    y_temp = y;
-    // iteration
+    float z_temp, z_actual, dz;
+    float tmp_angle_pitch;
     int i = 0;
-    for (i = 0; i < 20; i++)
+    z_temp = z;
+    // iteration
+    for(i = 0; i < 20; i ++)
     {
-        angle_pitch = (float)atan2(y_temp, x); // rad
-        y_actual = GimbalControlBulletModel(x, v, angle_pitch);
-        dy = 0.3*(y - y_actual);
-        y_temp = y_temp + dy;
-//        printf("iteration num %d: angle_pitch %f, temp target y:%f, err of y:%f, x:%f\n", i + 1, angle_pitch * 180 / PI, y_temp, dy,x);
-        if (fabsf(dy) < 0.00001)
+        tmp_angle_pitch = atan2f(z_temp, s); // rad
+        z_actual = GimbalControlBulletModel(s, v, tmp_angle_pitch);
+        if(! z_actual)
+        {
+            tmp_angle_pitch = 0;
+            break;
+        }
+        dz = 0.3 * (z - z_actual);
+        z_temp = z_temp + dz;
+        if(fabsf(dz) < vision_gap)
         {
             break;
         }
     }
-    return angle_pitch;
+    return tmp_angle_pitch;
 }
 
 /*
@@ -89,121 +106,110 @@ float GimbalControlGetPitch(float x, float y, float v)
 @param pitch:rad  传出pitch
 @param yaw:rad    传出yaw
 */
+void GimbalControlTransformYaw(float xw, float yw,
+                               float vxw, float vyw,
+                               int timestamp_start, float *yaw)
+{
+    int timestamp_now = timestamp_start + 70; // 假设当前时间戳=开始时间戳+50ms
+    //旧步兵70，新步兵--
+    // TODO：获取当前时间戳
+    // 线性预测
+    // 计算通信及解算时间戳延时+子弹飞行时间  考虑了200ms的通信延时
+    float timeDelay = (float) ((timestamp_now - timestamp_start) / 1000.0) + t;
+
+    xw += vxw * timeDelay;
+    yw += vyw * timeDelay;
+    *yaw = (float) (atan2f(yw, xw));
+}
+
 void GimbalControlTransform(float xw, float yw, float zw,
                             float vxw, float vyw, float vzw,
                             int timestamp_start, float *pitch, float *yaw,
                             float *aim_x, float *aim_y, float *aim_z)
 {
-    float x_static = 0.19133; //相机前推的距离
-    float z_static = 0.21265; //yaw轴电机到枪口水平面的垂直距离
-    int timestamp_now = timestamp_start + 300; // 假设当前时间戳=开始时间戳+200ms
+    idx = 0;
+    int timestamp_now = timestamp_start + 150; // 假设当前时间戳=开始时间戳+50ms
     // TODO：获取当前时间戳
-
+    st . xw = xw;
+    st . yw = yw;
+    st . zw = zw;
+    st . vxw = vxw;
+    st . vyw = vyw;
+    st . vzw = vzw;
     // 线性预测
     // 计算通信及解算时间戳延时+子弹飞行时间  考虑了200ms的通信延时
-
-
-
-    float timeDelay = (float)((timestamp_now - timestamp_start)/1000.0) + t;
-    st.tar_yaw += st.v_yaw * t;
+    float timeDelay = (float) ((timestamp_now - timestamp_start) / 1000.0) + t;
+    st . tar_yaw += st . v_yaw * timeDelay;
     //计算四块装甲板的位置
-	int use_1 = 1;
-	int i = 0;
-	int index = 0;
-	if (st.armor_type == 1){
-		for (i = 0; i<2; i++) {
-			float tmp_yaw = st.tar_yaw + i * PI;
-			float r = st.tar_r1;
-			tar_position[i].x = xw - r*cos(tmp_yaw);
-			tar_position[i].y = yw - r*sin(tmp_yaw);
-			tar_position[i].z = zw;
-			tar_position[i].yaw = st.tar_yaw + i * PI;
-		}
-		float yaw_diff_min = fabsf(*yaw - tar_position[0].yaw);
-			for (i = 1; i<2; i++)
-			{
-				float temp_yaw_diff = fabsf(*yaw - tar_position[i].yaw);
-				if (temp_yaw_diff < yaw_diff_min)
-				{
-					yaw_diff_min = temp_yaw_diff;
-					index = i;
-				}
-			}
+    int use_1 = - 1;
+    int i = 0;
+    if(st . armor_num == ARMOR_NUM_OUTPOST)
+    {  //前哨站
+        for(i = 0; i < 3; i ++)
+        {
+            float tmp_yaw = st . tar_yaw + i * 2.0 * PI / 3.0;  // 2/3PI
+            float r = (st . r1 + st . r2) / 2;   //理论上r1=r2 这里取个平均值
+            tar_position[i] . x = st . xw - r * cosf(tmp_yaw);
+            tar_position[i] . y = st . yw - r * sinf(tmp_yaw);
+            tar_position[i] . z = st . zw;
+            tar_position[i] . yaw = tmp_yaw;
+        }
+        //TODO 选择最优装甲板 选板逻辑你们自己写，这个一般给英雄用
+    }
+    else
+    {
+        for(i = 0; i < 4; i ++)
+        {
+            float tmp_yaw = st . tar_yaw + i * PI / 2.0;
+            float r = use_1 ? st . r1 : st . r2;
+            tar_position[i] . x = st . xw - r * cosf(tmp_yaw);
+            tar_position[i] . y = st . yw - r * sinf(tmp_yaw);
+            tar_position[i] . z = use_1 ? st . zw : st . zw + st . dz;
+            tar_position[i] . yaw = tmp_yaw;
+            use_1 = ! use_1;
+        }
+        //2种常见决策方案：
+        //1.计算枪管到目标装甲板yaw最小的那个装甲板
+        //2.计算距离最近的装甲板
 
+        //计算枪管到目标装甲板yaw最小的那个装甲板
+//	        float yaw_diff_min = fabsf(*yaw - tar_position[0].yaw);
+//	        for (i = 1; i<4; i++) {
+//	            float temp_yaw_diff = fabsf(*yaw - tar_position[i].yaw);
+//	            if (temp_yaw_diff < yaw_diff_min)
+//	            {
+//	                yaw_diff_min = temp_yaw_diff;
+//	                idx = i;
+//	            }
+//	        }
 
-
-	} else {
-		for (i = 0; i<4; i++) {
-			float tmp_yaw = st.tar_yaw + i * PI/2.0;
-			float r = use_1 ? st.tar_r1 : st.tar_r2;
-			tar_position[i].x = xw - r*cos(tmp_yaw);
-			tar_position[i].y = yw - r*sin(tmp_yaw);
-			tar_position[i].z = use_1 ? zw : st.z2;
-			tar_position[i].yaw = st.tar_yaw + i * PI/2.0;
-			use_1 = !use_1;
-		}
-
-		//计算距离最近的装甲板
-	//	float dis_diff_min = sqrt(tar_position[0].x * tar_position[0].x + tar_position[0].y * tar_position[0].y);
-	//	int index = 0;
-	//	for (i = 1; i<4; i++)
-	//	{
-	//		float temp_dis_diff = sqrt(tar_position[i].x * tar_position[0].x + tar_position[i].y * tar_position[0].y);
-	//		if (temp_dis_diff < dis_diff_min)
-	//		{
-	//			dis_diff_min = temp_dis_diff;
-	//			index = i;
-	//		}
-	//	}
-	//
-
-		//计算枪管到目标装甲板yaw小的那个装甲板
-//		float yaw_diff_min = fabsf(*yaw - tar_position[0].yaw);
-//		for (i = 1; i<4; i++)
-//		{
-//			float temp_yaw_diff = fabsf(*yaw - tar_position[i].yaw);
-//			if (temp_yaw_diff < yaw_diff_min)
-//			{
-//				yaw_diff_min = temp_yaw_diff;
-//				index = i;
-//			}
-//		}
-//		int dir_spin = st.v_yaw ? st.v_yaw / st.v_yaw : 1;
-//		float lim_dir = dir_spin * st.v_yaw / 25;
-		float lim_dir = 0;
-		float alpha = atan2(yw, xw);
-		float beta = st.tar_yaw;
-		float tmp_ang = alpha - beta + PI / 4;
-		tmp_ang = tmp_ang < 0? tmp_ang +2 *PI :tmp_ang;
-		int mod = tmp_ang / (PI / 2);
-		index = mod;
-
-
-
-
-
-
-	}
-
-
-
-
-    // float timeDelay = t; //子弹飞行时间
-    // zw = zw + vzw * timeDelay;
-    // *pitch = - atan2(zw - z_static, sqrt((xw) * (xw) + (yw) * (yw)) - x_static); //单纯用于跟随
-    // xw = xw + vxw * timeDelay;
-    // yw = yw + vyw * timeDelay ;
-
-    *aim_z = tar_position[index].z + vzw * timeDelay;
-    *pitch = -GimbalControlGetPitch(sqrt(tar_position[index].x * tar_position[index].x + tar_position[index].y * tar_position[index].y) + x_static,
-            tar_position[index].z - z_static, st.current_v);
-
-    *aim_x = tar_position[index].x + vxw * timeDelay;
-    *aim_y = tar_position[index].y + vyw * timeDelay;
-
-    *yaw = (float)(atan2(*aim_y, *aim_x));
+        //计算距离最近的装甲板
+        float dis_diff_min =
+                sqrt(tar_position[0] . x * tar_position[0] . x + tar_position[0] . y * tar_position[0] . y);
+        idx = 0;
+        for(i = 1; i < 4; i ++)
+        {
+            float temp_dis_diff =
+                    sqrt(tar_position[i] . x * tar_position[0] . x + tar_position[i] . y * tar_position[0] . y);
+            if(temp_dis_diff < dis_diff_min)
+            {
+                dis_diff_min = temp_dis_diff;
+                idx = i;
+            }
+        }
 
     }
 
+    *aim_z = tar_position[idx] . z + st . vzw * timeDelay;
+    *aim_x = tar_position[idx] . x + st . vxw * timeDelay;
+    *aim_y = tar_position[idx] . y + st . vyw * timeDelay;
+    //这里符号错了
+    if(*aim_y || *aim_x)
+        *yaw = (float) (atan2f(*aim_y, *aim_x));
+    float temp_pitch =
+            - GimbalControlGetPitch(sqrtf(((*aim_y) * (*aim_y)) + ((*aim_x) * (*aim_x))), *aim_z, st . current_v);
+    if(temp_pitch)
+        *pitch = temp_pitch;
+}
 // 从坐标轴正向看向原点，逆时针方向为正
 
