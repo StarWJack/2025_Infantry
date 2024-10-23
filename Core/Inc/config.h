@@ -63,7 +63,7 @@
 #define CANBUS_TASK_PERIOD 1
 
 //遥控器灵敏度设置
-#define REMOTE_YAW_SEN 0.000004f
+#define REMOTE_YAW_SEN 0.0000008f
 #define REMOTE_PITCH_SEN 0.0000006125f
 #define REMOTE_X_SEN    0.002f
 #define REMOTE_Y_SEN    0.002f
@@ -84,15 +84,13 @@
 #endif
 
 /*步兵1*/
-//#define PITCH_UP_BOUND	2*PI*4600/8192.0
-//#define PITCH_LW_BOUND  2*PI*3600/8192.0	//pitch轴可动范围上下界
-//#define CHASSIS_ZEROPOINT   7900	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
 
-/*步兵2*/
-
-#define PITCH_UP_BOUND	2*PI*7708/8192.0f
-#define PITCH_LW_BOUND  2*PI*400/8192.0f	//pitch轴可动范围上下界
-#define PITCH_MID       2*PI*34/8192.0f  //pitch轴中间位置
+// #define PITCH_UP_BOUND	2*PI*7708/8192.0f
+// #define PITCH_LW_BOUND  2*PI*400/8192.0f	//pitch轴可动范围上下界
+// #define PITCH_MID       2*PI*34/8192.0f  //pitch轴中间位置
+#define PITCH_UP_BOUND	3.58f
+#define PITCH_LW_BOUND  PI	//pitch轴可动范围上下界
+#define PITCH_MID       (0 +PI)  //pitch轴中间位置
 #define CHASSIS_ZEROPOINT   7851.0f	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
 #define AMMO_DIR_INV //拨弹盘为顺时针旋转
 
@@ -106,23 +104,45 @@
 
 
 //性能
-#define SHOOT_FREQ 3    //射频, hz
-#define BULLET_V 10     //弹速, m/s
+#define SHOOT_FREQ 15    //射频, hz
+#define BULLET_V 25     //弹速, m/s
 #define MOTORSPEED_DIFF 2.0f //弹速差异，m/s
 #define CALIBRATE 1     //弹速校准比率
 #define CHS_SPEED_LMT   2.0f
-#define CHS_SPIN_LMT    2*PI //底盘自旋速度
+#define CHS_SPIN_LMT    0.5*PI //底盘自旋速度
 
 //other
-#define ABS 0
-#define INCR 1
+//#define ABS 0
+//#define INCR 1
 
-#define OUTER 0
-#define INNER 1
-#define FEED 2
+typedef enum
+{
+    ABS=0,
+    INCR=1
+}ValSet_Type_e;
 
-#define ORIGIN 0
-#define RAD 1
+
+
+//#define OUTER 0
+//#define INNER 1
+//#define FEED 2
+
+typedef enum
+{
+    OUTER=0,
+    INNER=1,
+}PID_LOOP_e;
+
+
 
 
 #endif
+
+
+//TODO:1、火控
+//TODO:2、功率控制
+//TODO:3、nuc串口通信
+//TODO:4、裁判系统通信
+//TODO:5、看门狗
+//TODO:6、遥控器启动不接收
+//TODO:7、拨弹盘反转（卡弹时）
