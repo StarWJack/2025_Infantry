@@ -92,7 +92,6 @@ typedef struct __PID_TypeDef
 	float Output;
 	float Output_last;
 	float integral_limit;     // 积分限幅
-
 } PID_TypeDef;
 
 typedef enum
@@ -100,13 +99,12 @@ typedef enum
     ANGLE = 0,          //速度环，使用增量式
     SPEED = 1,         //角度环，使用原始位置式
     DUAL_LOOP,   //双环控制，外环角度内环速度
-    DUAL_LOOP_IMU,
 	AMMO
 } PID_Type_e;
 
 extern float PID_Origin( PID_TypeDef *hpid, float val_now, float target_now );
 
-extern float PID_Incr( PID_TypeDef *hpid, float val_now, float target_val_now );
+extern float PID_Incr( PID_TypeDef *hpid, float val_now, float target_now );
 
 extern void PID_Clear( PID_TypeDef *hpid );
 

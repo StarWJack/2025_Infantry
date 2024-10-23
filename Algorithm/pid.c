@@ -257,7 +257,9 @@ float PID_Origin( PID_TypeDef *hpid, float val_now, float target_now )
 #else
 #endif
 #else
-	hpid->Err_sum += hpid->Err_now;
+
+	hpid->Err_sum += hpid->Err_now; 
+	// hpid->Err_sum += hpid->Err_now;
 	if ( hpid->Err_sum < -hpid->Err_sum_Max )
 	{ hpid->Err_sum = -hpid->Err_sum_Max; }
 	if ( hpid->Err_sum > hpid->Err_sum_Max )
@@ -287,18 +289,18 @@ float PID_Origin( PID_TypeDef *hpid, float val_now, float target_now )
  * 		hpid			pid结构体
  * 		val_now			当前值
  * 		target_now		目标值
- * @retval 	控制量的增量
+ * @retval 	控制量
  *
  */
-float PID_Incr( PID_TypeDef *hpid, float val_now, float target_val_now )
+float PID_Incr( PID_TypeDef *hpid, float val_now, float target_now )
 {
-	hpid->Err_now = target_val_now - val_now;
+	hpid->Err_now = target_now - val_now;
 
 	hpid->p_out = hpid->Kp * ( hpid->Err_now - hpid->Err_last );
 	hpid->i_out = hpid->Ki * ( hpid->Err_now );
 	hpid->d_out = hpid->Kd * ( hpid->Err_now - hpid->Err_last - hpid->Err_diff );
 
-	hpid->Output = hpid->p_out + hpid->i_out + hpid->d_out;
+	hpid->Output += hpid->p_out + hpid->i_out + hpid->d_out;
 
 	F_Output_Limit( hpid );
 
