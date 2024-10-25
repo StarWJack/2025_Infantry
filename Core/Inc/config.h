@@ -43,7 +43,7 @@
 
 //CAN
 #define CAN_HEADER_NUM 2    //CAN标识符数量
-#define CAN_INST_NUM 9      //CAN设备总数
+#define CAN_INST_NUM 10      //CAN设备总数
 #define CAN_NUM 2           //CAN控制器数量
 #define USE_CAN2 0        //若使用CAN2，取消注释
 #define TOPIC_NUM 0
@@ -96,10 +96,18 @@
 
 
 #if HERO
-//TODO(GUATAI)英雄数据待更新
-#define PITCH_UP_BOUND	2*PI*7200/8192.0f
-#define PITCH_LW_BOUND  2*PI*6250/8192.0f	//pitch轴可动范围上下界
-#define CHASSIS_ZEROPOINT   7872	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
+//轴距（wheelbase） 即前后轮轴间距离
+#define LENGTH 0.36f
+//轮距（track） 即左右驱动轮中心距离
+#define WIDTH 0.33f
+//驱动轮直径（diameter）
+#define WHEEL_RADIUS 0.154f
+
+#define PITCH_UP_BOUND	3.58f
+#define PITCH_LW_BOUND  PI	//pitch轴可动范围上下界
+#define PITCH_MID       (0 +PI)  //pitch轴中间位置
+#define CHASSIS_ZEROPOINT   7851.0f	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
+#define AMMO_DIR_INV //拨弹盘为顺时针旋转
 #endif
 
 
