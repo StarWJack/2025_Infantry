@@ -9,13 +9,19 @@ typedef enum
     STOP = 0,
     AUTO = 1,//火控
     FULL = 2,//泼水
-    TEST = 3//测试 小拨盘上下发弹
+    TEST = 3,//测试 小拨盘上下发弹
 }shooter_strategy_e;//开火策略
 
+typedef enum
+{
+    SHOOTER_NORMAL = 0,
+    SHOOTER_REVERSE = 1
+}shooter_state_e;
 
 typedef struct
 {
     shooter_strategy_e shooter;
+    shooter_state_e shooter_state;
     uint8_t friction_state;//摩擦轮状态:0-关闭，1-开启
     float pitch;
     float yaw;

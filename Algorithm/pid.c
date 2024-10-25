@@ -271,7 +271,7 @@ float PID_Origin( PID_TypeDef *hpid, float val_now, float target_now )
 
 	hpid->Output = hpid->p_out + hpid->i_out + hpid->d_out;
 
-	hpid->Output += hpid->Kf * ( hpid->Output - hpid->Output_last );//前馈
+	hpid->Output += hpid->Kf * ( hpid->Output - hpid->Output_last ) / (1000/CANBUS_TASK_PERIOD);//前馈
 
 	F_Output_Limit( hpid );
 
@@ -300,7 +300,7 @@ float PID_Incr( PID_TypeDef *hpid, float val_now, float target_now )
 	hpid->i_out = hpid->Ki * ( hpid->Err_now );
 	hpid->d_out = hpid->Kd * ( hpid->Err_now - hpid->Err_last - hpid->Err_diff );
 
-	hpid->Output += hpid->p_out + hpid->i_out + hpid->d_out;
+	hpid->Output += hpid->p_out + hpid->i_out + hpid->d_out + hpid->Kf * ( hpid->Output - hpid->Output_last ) / (1000/CANBUS_TASK_PERIOD);//前馈
 
 	F_Output_Limit( hpid );
 

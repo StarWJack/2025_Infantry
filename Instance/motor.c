@@ -8,6 +8,7 @@
 #include "ErrorHandel.h"
 #include "malloc.h"
 #include "Chassis.h"
+#include "Gimbal.h"
 
 
 Motor_TypeDef *motor_list[MOTOR_NUM];
@@ -83,26 +84,38 @@ void MotorCalc(void)
             else if(i == MOTOR_YAW)
             {
 //                st->omega_z * 60 * CHASSIS_RADIUS * 187 / (3591 * WHEEL_RADIUS)
-                motor_list[i]->output += chassis_cmd.omega_z_last * 60 * CHASSIS_RADIUS * 187 / (3591 * WHEEL_RADIUS);//补偿小陀螺时云台的静态误差
+                motor_list[i]->output += chassis_cmd.omega_z_last ;//补偿小陀螺时云台的静态误差
             }
             motor_list[i]->output = PID_Incr(&(motor_list[i]->pid[SPEED]), MotorGetVal(motor_list[i], MOTORSPEED, RAD), motor_list[i]->output);
         }
         else if(type == AMMO)
         {
-            val_now = MotorGetVal(motor_list[i], MOTORANGLE, RAD);
-            //多圈转单圈 && 编码转弧度
+            if(gimbal_cmd . shooter_state == SHOOTER_NORMAL)
+            {
+                val_now = MotorGetVal(motor_list[i], MOTORANGLE, RAD);
+                //多圈转单圈 && 编码转弧度
 #ifdef AMMO_DIR_INV
-            if(val_now > val_last + 0.005f)
-                 *tar_now = *tar_now < 0 ? *tar_now+2*PI :*tar_now;
+                if(val_now > val_last + 0.005f)
+                    *tar_now = *tar_now < 0 ? *tar_now + 2 * PI : *tar_now;
 #elif
-            if(val_now +  0.005f < val_last)
-                *tar_now = *tar_now> 2*PI ? *tar_now-2*PI : *tar_now;
+                if(val_now +  0.005f < val_last)
+                    *tar_now = *tar_now> 2*PI ? *tar_now-2*PI : *tar_now;
 #endif
 
-            motor_list[i]->output = PID_Origin(&(motor_list[i]->pid[ANGLE]), val_now, *tar_now);
-            motor_list[i]->output = PID_Incr(&(motor_list[i]->pid[SPEED]), motor_list[i]->data.speed, (motor_list[i]->output + motor_list[i]->feed_fwd));
-            val_last = val_now;
+                motor_list[i] -> output = PID_Origin(&motor_list[i] -> pid[ANGLE], val_now, *tar_now);
+                motor_list[i] -> output = PID_Incr(&motor_list[i] -> pid[SPEED], motor_list[i] -> data . speed,motor_list[i] -> output);
+                val_last = val_now;
+            }
+            else if(gimbal_cmd . shooter_state == SHOOTER_REVERSE)
+            {
+                val_now = MotorGetVal(motor_list[i], MOTORANGLE, RAD);
+                motor_list[i] -> output = PID_Origin(&(motor_list[i] -> pid[ANGLE]), val_now, (val_now -PI));
+                motor_list[i] -> output = PID_Incr(&(motor_list[i] -> pid[SPEED]), motor_list[i] -> data . speed,motor_list[i] -> output );
+                gimbal_cmd . shooter_state = SHOOTER_NORMAL;
+            }
         }
+
+
         else
         	sErrorHandel(OUT_OF_ENUM);
 
@@ -372,7 +385,7 @@ void MotorInit()
 
     /* Chassis init */
     pid_inner.Kp = 1;
-    pid_inner.Ki = 0.1;
+    pid_inner.Ki = 0.1f;
     pid_inner.Kd = 0;
     pid_inner.Err_sum_Max = 1000;
     pid_inner.Output_Max = 5000;
