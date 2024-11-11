@@ -10,7 +10,7 @@
 #define MOTOR_NUM 9     //电机总数
 #define MOTOR_YAW 1     //电机列表索引测试用
 #define MOTOR_PITCH 0
-#define MOTOR_CHS_1 2   //chassis motor
+#define MOTOR_CHS_1 2   //chassis_info motor
 #define MOTOR_CHS_2 3
 #define MOTOR_CHS_3 4
 #define MOTOR_CHS_4 5
@@ -32,7 +32,7 @@
 #define MOTOR_NUM 10     //电机总数
 #define MOTOR_YAW 1     //电机列表索引测试用
 #define MOTOR_PITCH 0
-#define MOTOR_CHS_1 2   //chassis motor
+#define MOTOR_CHS_1 2   //chassis_info motor
 #define MOTOR_CHS_2 3
 #define MOTOR_CHS_3 4
 #define MOTOR_CHS_4 5
@@ -119,6 +119,13 @@
 #define CHS_SPEED_LMT   2.0f
 #define CHS_SPIN_LMT    0.5*PI //底盘自旋速度
 
+//比赛数据
+#define DETECT_COLOR 0//0-red 1-blue
+#define TASK_MODE 0 //0-auto 1-aim 2-buff
+
+
+
+
 //other
 //#define ABS 0
 //#define INCR 1
@@ -128,8 +135,6 @@ typedef enum
     ABS=0,
     INCR=1
 }ValSet_Type_e;
-
-
 
 //#define OUTER 0
 //#define INNER 1

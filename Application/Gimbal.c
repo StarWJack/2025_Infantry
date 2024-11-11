@@ -8,16 +8,10 @@
 #include "math.h"
 #include "remote.h"
 
-//osMessageQueueId_t gimbal_MQ_handel;
 osThreadId_t gimbal_task_handel;
 Gimbal_CmdTypedef gimbal_cmd;
 
-// const osMessageQueueAttr_t gimbal_cmd_attr = {
-//     .name = "gimbal_cmd_queue",
-//     .mq_size = 3*sizeof(gimbal_cmd),
-//     .mq_mem = sizeof(gimbal_cmd)
-// };
-//static float pitch_tar=0;
+
 //TODO: updata feedforward for motor_yaw
 void GimbalCtrl(Gimbal_CmdTypedef *st)
 {
