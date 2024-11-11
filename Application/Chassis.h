@@ -44,7 +44,7 @@ typedef struct
 
 extern osThreadId_t chassis_task_handel;;
 
-
+extern Chassis_TypeDef chassis ;
 extern Chassis_CmdTypedef chassis_cmd;
 
 void ChassisInit(void);

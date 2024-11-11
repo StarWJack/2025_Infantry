@@ -6,8 +6,8 @@
 
 
 osThreadId_t chassis_task_handel;
-Chassis_TypeDef chassis_info;
 
+Chassis_TypeDef chassis;
 Chassis_CmdTypedef chassis_cmd;
 
 
@@ -140,8 +140,8 @@ void ChassisInit(void)
     .Err_sum_Max = 100
     };
 
-    chassis_info.pid[INNER] = pid_inner;
-    chassis_info.pid[OUTER] = pid_outer;
+    chassis.pid[INNER] = pid_inner;
+    chassis.pid[OUTER] = pid_outer;
 }
 
 void ChassisTask(void *arguement)
@@ -150,16 +150,16 @@ void ChassisTask(void *arguement)
     float static solve[4];
     for(;;)
     {
-        chassis_info.omega_z_last = ChassisGetOmega();
-        motor_list[MOTOR_YAW]->feed_fwd = chassis_info.omega_z_last ;
+        chassis.omega_z_last = ChassisGetOmega();
+        motor_list[MOTOR_YAW]->feed_fwd = chassis.omega_z_last ;
         if(chassis_cmd.mode == SPIN)
         {
-            chassis.output = PID_Increment(&chassis.pid[INNER], chassis_cmd.omega_z_last,CHS_SPIN_LMT);
+            chassis.output = PID_Increment(&chassis.pid[INNER], chassis.omega_z_last,CHS_SPIN_LMT);
         }
         else if(chassis_cmd.mode == FOLLOW)
         {
             chassis.output = PID_Position(&chassis.pid[OUTER], MotorGetVal(motor_list[MOTOR_YAW],MOTORANGLE,ORIGIN), CHASSIS_ZEROPOINT);
-            chassis.output = PID_Increment(&chassis.pid[INNER], chassis_cmd.omega_z_last, chassis.output);
+            chassis.output = PID_Increment(&chassis.pid[INNER], chassis.omega_z_last, chassis.output);
         }
 #if INFANTRY
         OnmiSolve(&chassis_cmd, solve,0);
