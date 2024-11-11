@@ -4,10 +4,9 @@
 #include "cmsis_os2.h"
 #include "motor.h"
 
-//osMessageQueueId_t chassis_MQ_handel;
-//osMessageQueueId_t chassis_RMQ_handel;
+
 osThreadId_t chassis_task_handel;
-Chassis_TypeDef chassis;
+Chassis_TypeDef chassis_info;
 
 Chassis_CmdTypedef chassis_cmd;
 
@@ -121,13 +120,28 @@ float ChassisGetOmega( Motor_TypeDef *motor[4] )
 
 void ChassisInit(void)
 {
-//    osMessageQueueAttr_t const cmd_attr = {.name = "chassis_cmd"};
-//    chassis_MQ_handel = osMessageQueueNew(3, sizeof(Chassis_CmdTypedef), &cmd_attr);
-//    osMessageQueueAttr_t const msg_attr = {.name = "chassis_msg"};
-//    chassis_RMQ_handel = osMessageQueueNew(3, sizeof(float), &msg_attr);
     osThreadAttr_t task_attr = {.name = "ChassisTask"};
     chassis_task_handel = osThreadNew(ChassisTask, NULL, &task_attr);
-//    MotorStatusChange(motor_list[MOTOR_CHS_1], SPEED, NULL);//?
+    PID_TypeDef pid_outer = {
+    .Kp = 0,
+    .Ki = 0,
+    .Kd = 0,
+    .Kf = 0,
+    .Output_Max = 10,
+    .Err_sum_Max = 100
+    };
+
+    PID_TypeDef pid_inner = {
+    pid_inner.Kp = 0,
+    pid_inner.Ki = 0,
+    pid_inner.Kd = 0,
+    .Kf = 0,
+    .Output_Max = 4*PI,//量程：RPS
+    .Err_sum_Max = 100
+    };
+
+    chassis_info.pid[INNER] = pid_inner;
+    chassis_info.pid[OUTER] = pid_outer;
 }
 
 void ChassisTask(void *arguement)
@@ -136,15 +150,16 @@ void ChassisTask(void *arguement)
     float static solve[4];
     for(;;)
     {
-        chassis_cmd.omega_z_last = ChassisGetOmega();
+        chassis_info.omega_z_last = ChassisGetOmega();
+        motor_list[MOTOR_YAW]->feed_fwd = chassis_info.omega_z_last ;
         if(chassis_cmd.mode == SPIN)
         {
-            chassis.output = PID_Incr(&chassis.pid[INNER], chassis_cmd.omega_z_last,CHS_SPIN_LMT);
+            chassis_info.output = PID_Incr(&chassis_info.pid[INNER], chassis_info.omega_z_last, CHS_SPIN_LMT);
         }
         else if(chassis_cmd.mode == FOLLOW)
         {
-            chassis.output = PID_Origin(&chassis.pid[OUTER], MotorGetVal(motor_list[MOTOR_YAW],MOTORANGLE,ORIGIN), CHASSIS_ZEROPOINT);
-            chassis.output = PID_Incr(&chassis.pid[INNER], chassis_cmd.omega_z_last, chassis.output);
+            chassis_info.output = PID_Origin(&chassis_info.pid[OUTER], MotorGetVal(motor_list[MOTOR_YAW], MOTORANGLE, ORIGIN), CHASSIS_ZEROPOINT);
+            chassis_info.output = PID_Incr(&chassis_info.pid[INNER], chassis_info.omega_z_last, chassis_info.output);
         }
 #if INFANTRY
         OnmiSolve(&chassis_cmd, solve,0);
@@ -155,17 +170,7 @@ void ChassisTask(void *arguement)
         for(int i=0;i<4;i++)
             MotorSetTar(motor_list[i+MOTOR_CHS_1], solve[i], ABS);
 
-//#if INFANTRY
-//		ret = ChassisGetOmega(chs_list);
-//#endif
-//#if HERO
-//		ret = ChassisGetOmega(chs_list);
-//#endif
-//osMessageQueuePut(chassis_RMQ_handel, &ret, NULL, 0);
-
-
         time = osKernelGetTickCount();
-//    	osDelay(CANBUS_TASK_PERIOD);
         osDelayUntil(time + CHASSIS_TASK_PERIOD);
     }
 }
