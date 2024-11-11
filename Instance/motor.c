@@ -84,7 +84,7 @@ void MotorCalc(void)
             else if(i == MOTOR_YAW)
             {
 //                st->omega_z * 60 * CHASSIS_RADIUS * 187 / (3591 * WHEEL_RADIUS)
-                motor_list[i]->output += chassis_cmd.omega_z_last ;//补偿小陀螺时云台的静态误差
+                motor_list[i]->output += motor_list[i]->feed_fwd;//补偿小陀螺时云台的静态误差
             }
             motor_list[i]->output = PID_Incr(&(motor_list[i]->pid[SPEED]), MotorGetVal(motor_list[i], MOTORSPEED, RAD), motor_list[i]->output);
         }
@@ -365,10 +365,7 @@ void MotorInit()
     init.list_id = MOTOR_PITCH;
     init.pid_type = DUAL_LOOP;
     init.source = MotorGetIMU0_Pitch;
-//    pid_outer.Kp = 600;
-//    pid_outer.Ki = 4;
-//    pid_outer.Kd = 0;
-//    pid_outer.K = 0;
+
     pid_outer.Kp = 8;
     pid_outer.Ki = 0;
     pid_outer.Kd = 0;
@@ -459,22 +456,7 @@ void MotorInit()
     init.rxheader_id = 0x207;
     MotorRegist(init);
 
-    pid_outer.Kp = 0;
-    pid_outer.Ki = 0;
-    pid_outer.Kd = 0;
-    pid_outer.Kf = 0;
-    pid_outer.Output_Max = 10;//量程：PI
-    pid_outer.Err_sum_Max = 100;
 
-    pid_inner.Kp = 0;
-    pid_inner.Ki = 0;
-    pid_inner.Kd = 0;
-    pid_inner.Kf = 0;
-    pid_inner.Output_Max = 4*PI;//量程：RPS
-    pid_inner.Err_sum_Max = 100;
-
-    chassis.pid[INNER] = pid_inner;
-    chassis.pid[OUTER] = pid_outer;
 
 
 
