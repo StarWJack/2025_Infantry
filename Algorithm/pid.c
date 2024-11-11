@@ -284,10 +284,6 @@ float PID_Position( PID_TypeDef *hpid, float val_now, float target_now )
 		{
 			hpid->Output=0.0f;
 		}
-		else if(abs(hpid->measure==0-hpid->last_measure)<hpid->dead_band)
-		{
-			hpid->Output=0.0f;
-		}
 	}
 	F_Output_Limit( hpid );
 
@@ -327,10 +323,6 @@ float PID_Increment( PID_TypeDef *hpid, float val_now, float target_now )
 	{
 		hpid->Output=hpid->Output_last;
 		if(hpid->target==0&&hpid->last_target==0)
-		{
-			hpid->Output=0.0f;
-		}
-		else if(abs(hpid->measure==0-hpid->last_measure)<hpid->dead_band)
 		{
 			hpid->Output=0.0f;
 		}

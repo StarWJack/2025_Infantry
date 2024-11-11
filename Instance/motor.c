@@ -228,7 +228,7 @@ void MotorFillMsg(Can_InfoTypedef *st, uint8_t *txdata, uint8_t list_id)
  * @brief  	设置电机目标值
  * @param	电机结构体指针
  * @param	目标值
- * @param   ABS->absolute target; 
+ * @param   ABS->absolute target;
  *          INCR->add from perious target
  *          FEED->change feedforward
  * @retval 	无
@@ -359,7 +359,7 @@ void MotorInit()
 };
 
     /* Yaw init */
-    MotorRegist(init);   
+    MotorRegist(init);
 
     /* Pitch init */
     init.can_id = 1;
