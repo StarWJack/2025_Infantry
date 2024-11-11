@@ -114,7 +114,7 @@ void ControlTask(void *argument)
 //                  MotorGetVal(motor_list[MOTOR_PITCH],IMU,RAD),robo_state
 //                  );
         vofa_demo(motor_list[MOTOR_CHS_1]->pid[SPEED].Err_now,motor_list[MOTOR_CHS_1]->pid[SPEED].Err_last,
-                  motor_list[MOTOR_CHS_1]->pid[SPEED].Err_former,motor_list[MOTOR_CHS_1]->target,
+                  motor_list[MOTOR_CHS_1]->pid[SPEED].Err_pre,motor_list[MOTOR_CHS_1]->target,
                   MotorGetVal(motor_list[MOTOR_CHS_1],MOTORSPEED,RAD),robo_state);
 
 //        osDelay(CONTROL_TASK_PERIOD);

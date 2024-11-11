@@ -49,7 +49,7 @@ void MotorCalc(void)
         	else
         		tar_tmp = *tar_now;
 
-            motor_list[i]->output = PID_Incr(&(motor_list[i]->pid[SPEED]), MotorGetVal(motor_list[i], MOTORSPEED, RAD), tar_tmp);
+            motor_list[i]->output = PID_Increment(&(motor_list[i]->pid[SPEED]), MotorGetVal(motor_list[i], MOTORSPEED, RAD), tar_tmp);
         }
         else if(type == ANGLE)
         {
@@ -59,11 +59,11 @@ void MotorCalc(void)
                 if(*tar_now - val_now > PI) *tar_now -= 2*PI;
                 if(val_now - *tar_now > PI) *tar_now += 2*PI;
             }
-            motor_list[i]->output = PID_Origin(&(motor_list[i]->pid[ANGLE]), MotorGetVal(motor_list[i], MOTORANGLE, RAD), *tar_now);
+            motor_list[i]->output = PID_Position(&(motor_list[i]->pid[ANGLE]), MotorGetVal(motor_list[i], MOTORANGLE, RAD), *tar_now);
         }
         else if(type == DUAL_LOOP )
         {
-            //  motor_list[i]->output = PID_Incr(&(motor_list[i]->pid[SPEED]), MotorGetVal(motor_list[i],MOTORSPEED,RAD), *tar_now);
+            //  motor_list[i]->output = PID_Increment(&(motor_list[i]->pid[SPEED]), MotorGetVal(motor_list[i],MOTORSPEED,RAD), *tar_now);
             if (motor_list[i]->value == NULL)
                 val_now = MotorGetVal(motor_list[i], MOTORANGLE, RAD);
             else
@@ -76,7 +76,7 @@ void MotorCalc(void)
                 while (val_now - *tar_now > PI)
                     *tar_now += 2 * PI;
             }
-            motor_list[i]->output = PID_Origin(&(motor_list[i]->pid[ANGLE]), val_now, *tar_now);
+            motor_list[i]->output = PID_Position(&(motor_list[i]->pid[ANGLE]), val_now, *tar_now);
             if(i == MOTOR_PITCH)
             {
                 motor_list[i]->output = motor_list[i]->output * -1;//pitch轴速度方向相反
@@ -86,7 +86,7 @@ void MotorCalc(void)
 //                st->omega_z * 60 * CHASSIS_RADIUS * 187 / (3591 * WHEEL_RADIUS)
                 motor_list[i]->output += chassis_cmd.omega_z_last ;//补偿小陀螺时云台的静态误差
             }
-            motor_list[i]->output = PID_Incr(&(motor_list[i]->pid[SPEED]), MotorGetVal(motor_list[i], MOTORSPEED, RAD), motor_list[i]->output);
+            motor_list[i]->output = PID_Increment(&(motor_list[i]->pid[SPEED]), MotorGetVal(motor_list[i], MOTORSPEED, RAD), motor_list[i]->output);
         }
         else if(type == AMMO)
         {
@@ -102,15 +102,15 @@ void MotorCalc(void)
                     *tar_now = *tar_now> 2*PI ? *tar_now-2*PI : *tar_now;
 #endif
 
-                motor_list[i] -> output = PID_Origin(&motor_list[i] -> pid[ANGLE], val_now, *tar_now);
-                motor_list[i] -> output = PID_Incr(&motor_list[i] -> pid[SPEED], motor_list[i] -> data . speed,motor_list[i] -> output);
+                motor_list[i] -> output = PID_Position(&motor_list[i] -> pid[ANGLE], val_now, *tar_now);
+                motor_list[i] -> output = PID_Increment(&motor_list[i] -> pid[SPEED], motor_list[i] -> data . speed,motor_list[i] -> output);
                 val_last = val_now;
             }
             else if(gimbal_cmd . shooter_state == SHOOTER_REVERSE)
             {
                 val_now = MotorGetVal(motor_list[i], MOTORANGLE, RAD);
-                motor_list[i] -> output = PID_Origin(&(motor_list[i] -> pid[ANGLE]), val_now, (val_now -PI));
-                motor_list[i] -> output = PID_Incr(&(motor_list[i] -> pid[SPEED]), motor_list[i] -> data . speed,motor_list[i] -> output );
+                motor_list[i] -> output = PID_Position(&(motor_list[i] -> pid[ANGLE]), val_now, (val_now -PI));
+                motor_list[i] -> output = PID_Increment(&(motor_list[i] -> pid[SPEED]), motor_list[i] -> data . speed,motor_list[i] -> output );
                 gimbal_cmd . shooter_state = SHOOTER_NORMAL;
             }
         }
@@ -331,7 +331,8 @@ void MotorInit()
     .Kd = 0,
     .Kf = 0,
     .Output_Max = 10,
-    .Err_sum_Max = 500
+    .Err_sum_Max = 500,
+	.dead_band = 0.0f
     };
 
     PID_TypeDef pid_inner = {
@@ -340,6 +341,7 @@ void MotorInit()
     pid_inner.Kd = 12,
     .Kf = 0,
     .Output_Max = 15000,
+	.dead_band = 0.0f
     };
 
     Motor_InitTypedef init = {
@@ -365,21 +367,19 @@ void MotorInit()
     init.list_id = MOTOR_PITCH;
     init.pid_type = DUAL_LOOP;
     init.source = MotorGetIMU0_Pitch;
-//    pid_outer.Kp = 600;
-//    pid_outer.Ki = 4;
-//    pid_outer.Kd = 0;
-//    pid_outer.K = 0;
     pid_outer.Kp = 8;
     pid_outer.Ki = 0;
     pid_outer.Kd = 0;
     pid_outer.Kf = 0;
     pid_outer.Output_Max = 10;
+	pid_outer.dead_band = 0.0f;
     init.pid_outer = pid_outer;
 
     pid_inner.Kp = 3500;
     pid_inner.Ki = 100;
     pid_inner.Kd = 0;
     pid_inner.Output_Max = 20000;
+	pid_inner.dead_band = 0.0f;
     init.pid_inner = pid_inner;
     MotorRegist(init);
 
@@ -389,6 +389,7 @@ void MotorInit()
     pid_inner.Kd = 0;
     pid_inner.Err_sum_Max = 1000;
     pid_inner.Output_Max = 5000;
+	pid_inner.dead_band = 0.0f;
     init.pid_inner = pid_inner;
     init.can_id = 1;
     init.hcan = &hcan1;
@@ -444,10 +445,12 @@ void MotorInit()
     pid_outer.Kd = 0;
     pid_outer.Output_Max = 15000;
     pid_outer.Err_sum_Max = 1000;
+	pid_outer.dead_band = 0.0f;
     pid_inner.Kp = 0;
     pid_inner.Ki = 0;
     pid_inner.Kd = 0;
     pid_inner.Output_Max = 8000;
+	pid_inner.dead_band = 0.0f;
     init.pid_inner = pid_inner;
     init.pid_outer = pid_outer;
     init.can_id = 7;
@@ -465,6 +468,7 @@ void MotorInit()
     pid_outer.Kf = 0;
     pid_outer.Output_Max = 10;//量程：PI
     pid_outer.Err_sum_Max = 100;
+	pid_outer.dead_band = 0.0f;
 
     pid_inner.Kp = 0;
     pid_inner.Ki = 0;
@@ -472,6 +476,7 @@ void MotorInit()
     pid_inner.Kf = 0;
     pid_inner.Output_Max = 4*PI;//量程：RPS
     pid_inner.Err_sum_Max = 100;
+	pid_inner.dead_band = 0.0f;
 
     chassis.pid[INNER] = pid_inner;
     chassis.pid[OUTER] = pid_outer;

@@ -1,6 +1,6 @@
 #include "pid.h"
 
-#if TEST_I
+#if TEST_FEED
 /* ----------------------------下面是pid优化环节的实现---------------------------- */
 //TODO(GUATAI)dt获取需要进一步联动DWT内核定时器
 // 梯形积分
@@ -89,7 +89,7 @@ static void F_Output_Filter( PID_TypeDef *hpid )
 				   hpid->Output_last * hpid->output_LPF_RC / ( hpid->output_LPF_RC + hpid->dt );
 }
 
-#if TEST_R
+#if TEST_INPUT
 
 //TODO(GUATAI)两种输入滤波初步预想，有待优化
 static void F_Smooth_Target( PID_TypeDef *hpid )
@@ -178,34 +178,18 @@ static void F_Integral_Limit( PID_TypeDef *hpid )
 	}
 }
 
-/*
- * @brief  	位置式pid控制器
- * @param
- * 		hpid			pid结构体
- * 		val_now			获取到的当前值
- * 		target_now		目标值
- * @retval 	控制量
- *
- */
-float PID_Origin( PID_TypeDef *hpid, float val_now, float target_now )
+#if TEST_FEED
+float PID_Calc(PID_TypeDef *hpid)
 {
-	hpid->Err_now = target_now - val_now;
-#if TEST_I
 	hpid->dt = DWT_GetDeltaT( &hpid->DWT_cnt );
 
 	hpid->measure = hpid->last_measure;
 	hpid->last_target = hpid->last_target;
 	hpid->measure = val_now;
 	hpid->target = target_now;
-#if TEST_D
 	if ( hpid->Err_now < hpid->Dead_Band )
 	{
-#else
-#endif
-#else
-#endif
-#if TEST_I
-		hpid->p_out = hpid->Kp * hpid->Err_now;
+	hpid->p_out = hpid->Kp * hpid->Err_now;
 		hpid->i_term = hpid->Ki * hpid->Err_now * hpid->dt;
 		hpid->d_out = hpid->Kd * ( hpid->Err_now - hpid->Err_last ) / hpid->dt;
 
@@ -247,38 +231,71 @@ float PID_Origin( PID_TypeDef *hpid, float val_now, float target_now )
 		}
 
 		F_Output_Limit( hpid );
-#if TEST_D
 	}
 	else
 	{
 		hpid->Output = 0;
 		hpid->i_term = 0;
 	}
-#else
+	return hpid->Output;
+}
 #endif
-#else
 
-	hpid->Err_sum += hpid->Err_now; 
-	// hpid->Err_sum += hpid->Err_now;
-	if ( hpid->Err_sum < -hpid->Err_sum_Max )
-	{ hpid->Err_sum = -hpid->Err_sum_Max; }
-	if ( hpid->Err_sum > hpid->Err_sum_Max )
-	{ hpid->Err_sum = hpid->Err_sum_Max; }
+/*
+ * @brief  	位置式pid控制器
+ * @param
+ * 		hpid			pid结构体
+ * 		val_now			获取到的当前值
+ * 		target_now		目标值
+ * @retval 	控制量
+ *
+ */
+float PID_Position( PID_TypeDef *hpid, float val_now, float target_now )
+{
+	hpid->target = target_now;
+	hpid->measure = val_now;
+	hpid->Err_now = hpid->target - hpid->measure;
 
-	hpid->p_out = hpid->Kp * hpid->Err_now;
-	hpid->i_out = hpid->Ki * hpid->Err_sum;
-	hpid->d_out = hpid->Kd * ( hpid->Err_now - hpid->Err_last );
+	if(abs(hpid->Err_now)>=hpid->dead_band)
+	{
+		hpid->Err_sum += hpid->Err_now;
+		// hpid->Err_sum += hpid->Err_now;
+		if( hpid->Err_sum < -hpid->Err_sum_Max )
+		{
+			hpid->Err_sum = -hpid->Err_sum_Max;
+		}
+		if( hpid->Err_sum > hpid->Err_sum_Max )
+		{
+			hpid->Err_sum = hpid->Err_sum_Max;
+		}
 
-	hpid->Output = hpid->p_out + hpid->i_out + hpid->d_out;
+		hpid->p_out = hpid->Kp * hpid->Err_now;
+		hpid->i_out = hpid->Ki * hpid->Err_sum;
+		hpid->d_out = hpid->Kd * ( hpid->Err_now - hpid->Err_last );
 
-	hpid->Output += hpid->Kf * ( hpid->Output - hpid->Output_last ) / (1000/CANBUS_TASK_PERIOD);//前馈
+		hpid->Output = hpid->p_out + hpid->i_out + hpid->d_out;
 
+		hpid->Output += hpid->Kf * ( hpid->Output - hpid->Output_last ) / ( 1000 / CANBUS_TASK_PERIOD );//前馈
+	}
+	else
+	{
+		hpid->Output=hpid->Output_last;
+		if(hpid->target==0&&hpid->last_target==0)
+		{
+			hpid->Output=0.0f;
+		}
+		else if(abs(hpid->measure==0-hpid->last_measure)<hpid->dead_band)
+		{
+			hpid->Output=0.0f;
+		}
+	}
 	F_Output_Limit( hpid );
 
-	hpid->Err_former = hpid->Err_last;
+	hpid->Err_pre = hpid->Err_last;
 	hpid->Err_last = hpid->Err_now;
 	hpid->Output_last = hpid->Output;
-#endif
+	hpid->last_target = hpid->target;
+	hpid->last_measure = hpid->measure;
 
 	return hpid->Output;
 }
@@ -292,24 +309,42 @@ float PID_Origin( PID_TypeDef *hpid, float val_now, float target_now )
  * @retval 	控制量
  *
  */
-float PID_Incr( PID_TypeDef *hpid, float val_now, float target_now )
+float PID_Increment( PID_TypeDef *hpid, float val_now, float target_now )
 {
-	hpid->Err_now = target_now - val_now;
+	hpid->target = target_now;
+	hpid->measure = val_now;
+	hpid->Err_now = hpid->target - hpid->measure;
+	if(abs(hpid->Err_now)>=hpid->dead_band)
+	{
+		hpid->p_out = hpid->Kp * ( hpid->Err_now - hpid->Err_last );
+		hpid->i_out = hpid->Ki * ( hpid->Err_now );
+		hpid->d_out = hpid->Kd * ( hpid->Err_now - 2 * hpid->Err_last - hpid->Err_pre );
 
-	hpid->p_out = hpid->Kp * ( hpid->Err_now - hpid->Err_last );
-	hpid->i_out = hpid->Ki * ( hpid->Err_now );
-	hpid->d_out = hpid->Kd * ( hpid->Err_now - hpid->Err_last - hpid->Err_diff );
-
-	hpid->Output += hpid->p_out + hpid->i_out + hpid->d_out + hpid->Kf * ( hpid->Output - hpid->Output_last ) / (1000/CANBUS_TASK_PERIOD);//前馈
-
+		hpid->Output += hpid->p_out + hpid->i_out + hpid->d_out +
+						hpid->Kf * ( hpid->Output - hpid->Output_last ) / ( 1000 / CANBUS_TASK_PERIOD );//前馈
+	}
+	else
+	{
+		hpid->Output=hpid->Output_last;
+		if(hpid->target==0&&hpid->last_target==0)
+		{
+			hpid->Output=0.0f;
+		}
+		else if(abs(hpid->measure==0-hpid->last_measure)<hpid->dead_band)
+		{
+			hpid->Output=0.0f;
+		}
+	}
 	F_Output_Limit( hpid );
 
-	hpid->Err_diff = hpid->Err_now - hpid->Err_last;
+	hpid->Err_pre  = hpid->Err_last;
 	hpid->Err_last = hpid->Err_now;
+	hpid->Output_last = hpid->Output;
+	hpid->last_target = hpid->target;
+	hpid->last_measure = hpid->measure;
 
 	return hpid->Output;
 }
-
 
 /*
  * @brief  	清除PID积分值和输出
@@ -320,23 +355,18 @@ float PID_Incr( PID_TypeDef *hpid, float val_now, float target_now )
 void PID_Clear( PID_TypeDef *hpid )
 {
 
-    hpid->Err_diff = 0;
-    hpid->Err_former = 0;
+    hpid->Err_pre = 0;
     hpid->Err_last = 0;
     hpid->Err_now = 0;
     hpid->Err_sum = 0;
-
-#if TEST_I
 	hpid->target = 0;
 	hpid->last_target = 0;
 	hpid->measure = 0;
 	hpid->last_measure = 0;
+
+#if TEST_FEED
 	hpid->d_out_last = 0;
 	hpid->i_term = 0;
-#if TEST_D
-	hpid->Dead_Band = 0.0f;
-#else
-#endif
 #else
 #endif
 }

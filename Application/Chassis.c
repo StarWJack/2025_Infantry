@@ -112,7 +112,7 @@ float ChassisGetOmega( Motor_TypeDef *motor[4] )
 	ret = ( ret * 187.0f / 3591.0f ) / 4;    //转换到输出端转速
 	ret = ret * 0.5f * ( LENGTH + WIDTH );
 	return ret;
-//	PID_Origin(&PID_Motor_Angle[Chassis_Angle_ID], Motor[Motor_Yaw_ID].angle, 0);
+//	PID_Position(&PID_Motor_Angle[Chassis_Angle_ID], Motor[Motor_Yaw_ID].angle, 0);
 //	//底盘角度环,以底盘与云台的相对角度为输入
 //	omega = PID_Motor_Angle[Chassis_Angle_ID].Output;
 }
@@ -139,12 +139,12 @@ void ChassisTask(void *arguement)
         chassis_cmd.omega_z_last = ChassisGetOmega();
         if(chassis_cmd.mode == SPIN)
         {
-            chassis.output = PID_Incr(&chassis.pid[INNER], chassis_cmd.omega_z_last,CHS_SPIN_LMT);
+            chassis.output = PID_Increment(&chassis.pid[INNER], chassis_cmd.omega_z_last,CHS_SPIN_LMT);
         }
         else if(chassis_cmd.mode == FOLLOW)
         {
-            chassis.output = PID_Origin(&chassis.pid[OUTER], MotorGetVal(motor_list[MOTOR_YAW],MOTORANGLE,ORIGIN), CHASSIS_ZEROPOINT);
-            chassis.output = PID_Incr(&chassis.pid[INNER], chassis_cmd.omega_z_last, chassis.output);
+            chassis.output = PID_Position(&chassis.pid[OUTER], MotorGetVal(motor_list[MOTOR_YAW],MOTORANGLE,ORIGIN), CHASSIS_ZEROPOINT);
+            chassis.output = PID_Increment(&chassis.pid[INNER], chassis_cmd.omega_z_last, chassis.output);
         }
 #if INFANTRY
         OnmiSolve(&chassis_cmd, solve,0);
