@@ -1,9 +1,10 @@
 /*
  * @file		Serial.c/h
- * @brief		usb-cdc通信程序，用于上位机和stm32的通信，需配合上位机代码使用
+ * @brief		usb-cdc通信程序，用于上位机和stm32的通信，需配合上位机代码使用，现采用zy版本
  * @history
  * 版本			作者			编写日期
  * v1.0.0		许金帅		2023/4/1
+ * v2.0.0		冯俊玮		2024/10/29
  *
  */
 #ifndef __Serial_h__
@@ -14,43 +15,95 @@
 #include "stdint.h"
 
 //下面是为和ROS2上位机沟通而定制的结构体
-typedef struct ReceivePacket _receive_packet;
-typedef struct ReceivePacket{
-	uint8_t header;
-	uint8_t tracking;
-	float x;
-	float y;
-	float z;
-	float yaw;
-	float vx;
-	float vy;
-	float vz;
-	float v_yaw;
-	float r1;
-	float r2;
-	float z_2;
-	uint8_t armor_type; //装甲板类型 0为小 1为大
-	uint16_t checksum;
-}__attribute__((packed))_receivepacket,*_receive_packetinfo;
+//typedef struct ReceivePacket{
+//	uint8_t header;//0xA5
+//	uint8_t tracking : 1;
+//    uint8_t id: 3;
+//    uint8_t armor_num : 3;
+//    uint8_t reserved : 1;
+//	float x;
+//	float y;
+//	float z;
+//	float yaw;
+//	float vx;
+//	float vy;
+//	float vz;
+//	float v_yaw;
+//	float r1;
+//	float r2;
+//	float dz;
+//	uint16_t checksum;
+//}__attribute__((packed))receive_packet_t;
+//
+//typedef struct SendPacket
+//{
+//	uint8_t header;//0x5A
+//	uint8_t robot_color : 1;
+//	uint8_t reset_tracker : 1;
+//	uint8_t reserve : 6;
+//    float roll;
+//	float pitch;
+//	float yaw;
+//	float aim_x;
+//	float aim_y;
+//	float aim_z;
+//	uint16_t checksum;
+//}__attribute__((packed))send_packet_t;
 
-typedef struct SendPacket
+//适配zy版本
+typedef struct
 {
-	uint8_t header;
-	uint8_t robot_color : 1;
-	uint8_t task_mode : 2;
-	uint8_t reserve : 5;
-	float pitch;
-	float yaw;
-	float aim_x;
-	float aim_y;
-	float aim_z;
-	uint16_t checksum;
-}__attribute__((packed))_sendpacket,*_send_packetinfo;
+  uint8_t header;//0xA5
+  uint8_t state : 2;       // 0-untracking 1-tracking-aim 2-tracking-buff
+  uint8_t id : 3;          // aim: 0-outpost 6-guard 7-base
+  uint8_t armors_num : 3;  // 2-balance 3-outpost 4-normal
+  float x;                 // aim: robot-center || buff: rune-center
+  float y;                 // aim: robot-center || buff: rune-center
+  float z;                 // aim: robot-center || buff: rune-center
+  float yaw;               // aim: robot-yaw || buff: rune-theta
+  // spd = a*sin(w*t)+b || spd > 0 ==> clockwise
+  float vx;  // aim: robot-vx || buff: rune spin speed param - a
+  float vy;  // aim: robot-vy || buff: rune spin speed param - b
+  float vz;  // aim: robot-vz || buff: rune spin speed param - w
+  float v_yaw;
+  float r1;
+  float r2;
+  float dz;
+  uint32_t cap_timestamp;  // (ms) frame capture time
+  uint16_t t_offset;       // (ms) speed t offset
+  uint16_t checksum ;
+} __attribute__((packed)) receive_packet_t;
+
+typedef struct
+{
+  uint8_t header ;//0x5A
+  uint8_t detect_color : 1;  // 0-red 1-blue
+  uint8_t task_mode : 2;     // 0-auto 1-aim 2-buff
+  uint8_t reset_tracker : 1;
+  uint8_t is_play : 1;
+  uint8_t change_target : 1;
+  uint8_t reserved : 2;
+  float *roll;
+  float *pitch;
+  float *yaw;
+  float aim_x;
+  float aim_y;
+  float aim_z;
+  uint16_t game_time;  // (s) game time [0, 450]
+  uint32_t timestamp;  // (ms) board time
+  uint16_t checksum ;
+} __attribute__((packed)) send_packet_t;
+
+
+extern receive_packet_t aim_packet_from_nuc;
+extern send_packet_t aim_packet_to_nuc;
+extern uint8_t buf_receive_from_nuc[sizeof(receive_packet_t)];//具体应用在usb接收函数中（在cdc_if.c中）
+
 
 int CDC_SendFeed(uint8_t* Fed, uint16_t Len);//CDC发送反馈数据的函数
 //ROS2发送代码
-void Pack_And_Send_Data_ROS2(_send_packetinfo sendinfo,uint16_t Len);
-int CDC_Receive_ROS2(uint8_t* Buf, uint16_t Len,_receive_packetinfo packinfo);//ROS2下的接收函数
+void Pack_And_Send_Data_ROS2(send_packet_t *sendinfo);
+void UnPack_Data_ROS2(uint8_t *receive_Array,receive_packet_t *receive_info,uint16_t Len);
 uint16_t Get_CRC16_Check_Sum(uint8_t* pchMessage,uint32_t dwLength, uint16_t wCRC);
-extern _receive_packetinfo receinfo;
+
 #endif

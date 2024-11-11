@@ -52,7 +52,8 @@ typedef struct _Motor_TypeDef
     float target;
     /* switching data source accroding to Motor_InfoTypeDef->type
     NOTE: don't read derectly, use MotorGetVal() instead */
-//    float (*value)(struct imu_s *imu);
+
+
     float (*value)(struct _Motor_TypeDef *st);
     float feed_fwd;        //feedforward when type='IMU'
     float output;

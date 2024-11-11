@@ -13,7 +13,8 @@
 #include "vofa.h"
 #include "CanBus.h"
 #include "cmsis_os2.h"
-
+#include "usbd_cdc_if.h"
+#include "Serial.h"
 
 
 osThreadId_t control_task_handel;
@@ -96,11 +97,9 @@ void RemoteCtrl(Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 void ControlTask(void *argument)
 {
     uint32_t time = osKernelGetTickCount();
-//    Gimbal_CmdTypedef static gimbal_cmd;
-//    Chassis_CmdTypedef static chassis_cmd;
-//    float static omege_chs;
     for(;;)
     {
+        UnPack_Data_ROS2(buf_receive_from_nuc,&aim_packet_from_nuc,sizeof (aim_packet_from_nuc));
         RemoteCtrl(&gimbal_cmd, &chassis_cmd);
 #ifdef USE_KEYBOARD
         KeyboardCtrl(&gimbal_cmd, &chassis_cmd);
@@ -108,7 +107,6 @@ void ControlTask(void *argument)
         //云台坐标系转底盘坐标系
         ChassisCmdTrans(&chassis_cmd, CHASSIS_ZEROPOINT, MotorGetVal(motor_list[MOTOR_YAW],MOTORANGLE,ORIGIN));
 
-////        WatchDogTask();
 //        vofa_demo(motor_list[MOTOR_CHS_1]->pid[SPEED].Err_now,motor_list[MOTOR_CHS_1]->pid[ANGLE].Err_sum,
 //                  motor_list[MOTOR_CHS_1]->output,motor_list[MOTOR_CHS_1]->target,
 //                  MotorGetVal(motor_list[MOTOR_PITCH],IMU,RAD),robo_state
@@ -117,7 +115,8 @@ void ControlTask(void *argument)
                   motor_list[MOTOR_CHS_1]->pid[SPEED].Err_former,motor_list[MOTOR_CHS_1]->target,
                   MotorGetVal(motor_list[MOTOR_CHS_1],MOTORSPEED,RAD),robo_state);
 
-//        osDelay(CONTROL_TASK_PERIOD);
+        Pack_And_Send_Data_ROS2(&aim_packet_to_nuc);
+
         time = osKernelGetTickCount();
         osDelayUntil(time + CONTROL_TASK_PERIOD);
     }

@@ -6,19 +6,18 @@
  * v1.1.0		许金帅		2023/4/11
  *
  */
+#include "Serial.h"
 #include "stm32f4xx_hal.h"
 #include "usbd_cdc_if.h"
-#include "stdio.h"
 #include "string.h"
-#include "Serial.h"
+#include "imu.h"
 
-int CDC_SendFeed(uint8_t* Fed, uint16_t Len);//CDC发送反馈数据的函数
-_receive_packetinfo receinfo;
-//ROS2相关代码
-//void Pack_And_Send_Data_ROS2(_send_packetinfo sendinfo,uint8_t* TempArray,uint8_t* sendData,uint16_t Len);//打包以及发送函数
-void UnPack_Data_ROS2(uint8_t *receive_Array,_receive_packetinfo receive_info,uint16_t Len);//解包函数
-int CDC_Receive_ROS2(uint8_t* Buf, uint16_t Len,_receive_packetinfo packinfo);//接收函数
-//uint16_t Get_CRC16_Check_Sum( _send_packetinfo sendinfo,uint8_t* TempArray,uint8_t* pchMessage,uint32_t dwLength, uint16_t wCRC);//CRC校验码生成
+
+receive_packet_t aim_packet_from_nuc;
+send_packet_t aim_packet_to_nuc;
+uint8_t buf_receive_from_nuc[sizeof(receive_packet_t)];
+
+
 //这是CRC校验码的数据表
 const uint16_t CRC_Data[256]={ /* CRC 字节余式表 */
 		    0x0000, 0x1189, 0x2312, 0x329b, 0x4624, 0x57ad, 0x6536, 0x74bf, 0x8c48,
@@ -68,34 +67,24 @@ int CDC_SendFeed(uint8_t* Fed, uint16_t Len)
   * @brief  将接收到的控制数组拆分为对应的结构体
   * @param
 		receive_Array 接收到的数据数组
-		receive_info 接收数据的结构体
+		aim_packet_from_nuc 接收数据的结构体
 		Len 接收数组的长度
   * @retval 无
   */
-void UnPack_Data_ROS2(uint8_t *receive_Array,_receive_packetinfo receive_info,uint16_t Len)
+void UnPack_Data_ROS2(uint8_t *receive_buf,receive_packet_t *receive_packet,uint16_t Len)
 {
-	uint16_t w_expected;
-	w_expected=Get_CRC16_Check_Sum(receive_Array,Len-2,0xFFFF);
-	if((w_expected & 0xff) == receive_Array[Len - 2] && ((w_expected >> 8) & 0xff) == receive_Array[Len - 1]){
-		memcpy(receive_info,receive_Array, 48);
+    if(receive_buf[0] == 0xA5)
+    {
+        uint16_t w_expected;
+	    w_expected=Get_CRC16_Check_Sum(receive_buf,Len-2,0xFFFF);
+        if((w_expected & 0xff) == receive_buf[Len - 2] && ((w_expected >> 8) & 0xff) == receive_buf[Len - 1])
+        {
+            memcpy(receive_packet,receive_buf, Len);
+        }
 	}
+    memset(receive_buf,0,Len);
 }
 
-/**
-  * @brief  ROS2下的数据接收函数
-  * @param
-        Buf 缓存数组
-		Len 数组长度
-		packinfo 具体接收数据的结构体
-  * @retval 无
-  */
-int CDC_Receive_ROS2(uint8_t* Buf, uint16_t Len,_receive_packetinfo packinfo)
-{
-	CDC_Receive_FS(Buf, &Len);
-	if(Buf[0]==(uint8_t)(0xA5)){UnPack_Data_ROS2(Buf,packinfo,Len);}
-	else return -1;
-	return 0;
-}
 
 /**
   * @brief  将对应的结构体打包为缓冲数组
@@ -104,15 +93,16 @@ int CDC_Receive_ROS2(uint8_t* Buf, uint16_t Len,_receive_packetinfo packinfo)
 		Len       确定发送的字节长度
   * @retval 无
   */
-void Pack_And_Send_Data_ROS2(_send_packetinfo sendinfo,uint16_t Len)
+void Pack_And_Send_Data_ROS2(send_packet_t *send_packet)
 {
-	uint8_t pchMessage[Len];
-	uint16_t w_crc=0;
-	memcpy(pchMessage, sendinfo, Len-2);
-	w_crc=Get_CRC16_Check_Sum(pchMessage, Len-2, 0xFFFF);
-	pchMessage[Len - 2] = (uint8_t)(w_crc & 0x00ff);
-	pchMessage[Len - 1] = (uint8_t)((w_crc >> 8) & 0x00ff);
-	CDC_SendFeed(pchMessage, Len);
+
+    uint16_t len =sizeof (send_packet_t);
+    uint8_t tmp[len];
+    memcpy(tmp, send_packet,len-2);
+    uint16_t w_crc = Get_CRC16_Check_Sum(tmp, len - 2, 0xFFFF);
+    tmp[len - 2] = (uint8_t) (w_crc & 0x00ff);
+    tmp[len - 1] = (uint8_t) ((w_crc >> 8) & 0x00ff);
+	CDC_SendFeed(tmp, len);
 }
 
 /**
@@ -132,4 +122,31 @@ uint16_t Get_CRC16_Check_Sum(uint8_t* pchMessage,uint32_t dwLength, uint16_t wCR
       ((uint16_t)(wCRC) >> 8) ^ CRC_Data[((uint16_t)(wCRC) ^ (uint16_t)(ch_data)) & 0x00ff];
   }
   return wCRC;
+}
+
+float Serial_GetRoll(send_packet_t *send_packet)
+{
+    return imu_list[0]->roll(imu_list[0]);
+}
+float Serial_GetYaw(send_packet_t *send_packet)
+{
+    return imu_list[0]->yaw(imu_list[0]);
+}
+float Serial_GetPitch(send_packet_t *send_packet)
+{
+    return imu_list[0]->pitch(imu_list[0]);
+}
+
+
+void Send_Packet_Init(send_packet_t *send_packet)
+{
+    send_packet->header = 0x5A;
+    send_packet->detect_color = DETECT_COLOR;
+    send_packet->task_mode = TASK_MODE;
+    send_packet->reset_tracker = 0;
+    send_packet->is_play = 1;
+    send_packet->change_target = 0;
+    send_packet-> roll = Serial_GetRoll;
+    send_packet-> pitch = Serial_GetPitch;
+    send_packet-> yaw = Serial_GetYaw;
 }
