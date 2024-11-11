@@ -10,11 +10,9 @@
 
 //0为关闭
 //TODO(GUATAI)其它优化PID函数以及前馈待测试
-#define TEST_I 0
-//TODO(GUATAI)死区处理操作待测试
-#define TEST_D 0
+#define TEST_FEED 0
 //TODO(GUATAI)输入处理待测试
-#define TEST_R 0
+#define TEST_INPUT 0
 /*
  * 先暂时T:采样周期0.01s(10ms)
  * (根据输出大小调整合适单位)
@@ -54,12 +52,14 @@ typedef struct __PID_TypeDef
 	float p_out;
 	float i_out;
 	float d_out;
-#if TEST_I
-	PID_improvement_e improve;//PID开启优化选项
+
 	float target;
 	float last_target;
 	float measure;
 	float last_measure;
+	float dead_band;
+#if TEST_FEED
+	PID_improvement_e improve;//PID开启优化选项
 	float ci_coefA;             // 变速积分 For Changing Integral
 	float ci_coefB;             // 变速积分 ITerm = Err*((A-abs(err)+B)/A)  when B<|err|<A+B
 	float dt;
@@ -67,25 +67,19 @@ typedef struct __PID_TypeDef
 	float d_out_last;
 	float output_LPF_RC;     // 输出滤波器 RC = 1/omegac
 	float derivative_LPF_RC; // 微分滤波器系数
-#if TEST_D
-	float Dead_Band;
 #else
 #endif
-#if TEST_R
+#if TEST_INPUT
 	float *ref_p; //设定值
 	float *fab_p; //反馈值
 	float target_change_max;
 	float input_LPF_RC;//输入滤波系数
 #else
 #endif
-#else
-	float T;//采样时间（任务运行周期）
-#endif
-	float Err_former;
+	float Err_pre;
 	float Err_last;
 	float Err_now;
 	float Err_sum;
-	float Err_diff;
 	float Output_Max;
 	float Err_sum_Max;
 
@@ -97,14 +91,14 @@ typedef struct __PID_TypeDef
 typedef enum
 {
     ANGLE = 0,          //速度环，使用增量式
-    SPEED = 1,         //角度环，使用原始位置式
-    DUAL_LOOP,   //双环控制，外环角度内环速度
+    SPEED = 1,         //角度环，使用位置式
+    DUAL_LOOP,   //双环控制，外环角度,内环速度
 	AMMO
 } PID_Type_e;
 
-extern float PID_Origin( PID_TypeDef *hpid, float val_now, float target_now );
+extern float PID_Position( PID_TypeDef *hpid, float val_now, float target_now );
 
-extern float PID_Incr( PID_TypeDef *hpid, float val_now, float target_now );
+extern float PID_Increment( PID_TypeDef *hpid, float val_now, float target_now );
 
 extern void PID_Clear( PID_TypeDef *hpid );
 
