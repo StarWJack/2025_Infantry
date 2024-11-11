@@ -197,6 +197,11 @@ float IMUGetYaw(IMU_TypeDef *imu)
      return imu->angle[0]+PI;
 }
 
+float IMUGetRoll(IMU_TypeDef *imu)
+{
+     return imu->angle[1]+PI;
+}
+
 void IMUInit()
 {
     IMU_TypeDef static imu1;
@@ -225,6 +230,7 @@ void IMUInit()
 	imu1.angle_q[3] = 0;
 	imu1.pitch = IMUGetPitch;
 	imu1.yaw = IMUGetYaw;
+    imu1.roll = IMUGetRoll;
 	imu1.update = BMI088Update;
 	imu1.info.enable = 1;
 

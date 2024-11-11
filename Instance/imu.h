@@ -48,6 +48,7 @@ typedef struct imu_s
 	float angle[3];       //互补滤波结果
     float (*pitch)(struct imu_s *imu);
     float (*yaw)(struct imu_s *imu);
+    float (*roll)(struct imu_s *imu);
     void (*update)(struct imu_s *imu);
 }IMU_TypeDef;
 
