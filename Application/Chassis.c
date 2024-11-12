@@ -11,49 +11,51 @@ Chassis_TypeDef chassis;
 Chassis_CmdTypedef chassis_cmd;
 
 
-
-void ChassisTask(void *arguement);
+void ChassisTask (void *arguement);
 
 #if INFANTRY
+
 /*
  * @brief  	全向轮解算
  * @param	底盘控制结构体指针
  * @retval 	float[4], 各轮角速度
  * @note:   仅考虑全向轮安装角为45°且轴长相等的情况
  */
-void OnmiSolve(Chassis_CmdTypedef *cmd, float *ret,float omega_z)
+void OnmiSolve (Chassis_CmdTypedef *cmd, float *ret, float omega_z)
 {
-    /*         vx
-                ^
-                |
-           1//      \\2
-           // \    / \\
-               top      -->vy     
-           \\ /    \ //
-           4\\      //3
-                        
-    */
-    ret[0] = (omega_z * (2*PI*CHASSIS_RADIUS) - (-cmd->vx - cmd->vy) * SQRT_2) / WHEEL_RADIUS;
-    ret[1] = (omega_z * (2*PI*CHASSIS_RADIUS) - (cmd->vx - cmd->vy) * SQRT_2) / WHEEL_RADIUS;
-    ret[2] = (omega_z * (2*PI*CHASSIS_RADIUS) - (cmd->vx + cmd->vy) * SQRT_2) / WHEEL_RADIUS;
-    ret[3] = (omega_z * (2*PI*CHASSIS_RADIUS) - (-cmd->vx + cmd->vy) * SQRT_2) / WHEEL_RADIUS;
+	/*         vx
+				^
+				|
+		   1//      \\2
+		   // \    / \\
+			   top      -->vy
+		   \\ /    \ //
+		   4\\      //3
+					
+	*/
+	ret[0] = (omega_z * (2 * PI * CHASSIS_RADIUS) - (- cmd -> vx - cmd -> vy) * SQRT_2) / WHEEL_RADIUS;
+	ret[1] = (omega_z * (2 * PI * CHASSIS_RADIUS) - (cmd -> vx - cmd -> vy) * SQRT_2) / WHEEL_RADIUS;
+	ret[2] = (omega_z * (2 * PI * CHASSIS_RADIUS) - (cmd -> vx + cmd -> vy) * SQRT_2) / WHEEL_RADIUS;
+	ret[3] = (omega_z * (2 * PI * CHASSIS_RADIUS) - (- cmd -> vx + cmd -> vy) * SQRT_2) / WHEEL_RADIUS;
 }
+
 /*
  * @brief  	全向轮逆解算(3508电机)
  * @param	底盘四电机结构体指针，顺序1-4
  * @retval 	底盘自旋速度，rps
  * @todo    按需增加对里程的解算
  */
-float ChassisGetOmega(void)
+float ChassisGetOmega (void)
 {
-    float ret=0;
-    for(int i=MOTOR_CHS_1;i<4;i++)
-        ret += MotorGetVal(motor_list[i], MOTORSPEED,ORIGIN);
-    ret = ret /60 ;    //RPM to RPS
-    ret = (ret*187.0f/3591.0f)/4;	//转换到输出端转速
-    ret = ret*(WHEEL_RADIUS/CHASSIS_RADIUS);
-    return ret;
+	float ret = 0;
+	for ( int i = MOTOR_CHS_1; i < 4; i ++ )
+		ret += MotorGetVal (motor_list[i], MOTORSPEED, ORIGIN);
+	ret = ret / 60;    //RPM to RPS
+	ret = (ret * 187.0f / 3591.0f) / 4;    //转换到输出端转速
+	ret = ret * (WHEEL_RADIUS / CHASSIS_RADIUS);
+	return ret;
 }
+
 #endif
 
 #if HERO
@@ -118,59 +120,61 @@ float ChassisGetOmega( Motor_TypeDef *motor[4] )
 #endif
 
 
-void ChassisInit(void)
+void ChassisInit (void)
 {
-    osThreadAttr_t task_attr = {.name = "ChassisTask"};
-    chassis_task_handel = osThreadNew(ChassisTask, NULL, &task_attr);
-    PID_TypeDef pid_outer = {
-    .Kp = 0,
-    .Ki = 0,
-    .Kd = 0,
-    .Kf = 0,
-    .Output_Max = 10,
-    .Err_sum_Max = 100
-    };
-
-    PID_TypeDef pid_inner = {
-    pid_inner.Kp = 0,
-    pid_inner.Ki = 0,
-    pid_inner.Kd = 0,
-    .Kf = 0,
-    .Output_Max = 4*PI,//量程：RPS
-    .Err_sum_Max = 100
-    };
-
-    chassis.pid[INNER] = pid_inner;
-    chassis.pid[OUTER] = pid_outer;
+	osThreadAttr_t task_attr = {.name = "ChassisTask"};
+	chassis_task_handel = osThreadNew (ChassisTask, NULL, &task_attr);
 }
 
-void ChassisTask(void *arguement)
+void ChassisTask (void *arguement)
 {
-    uint32_t time = osKernelGetTickCount();
-    float static solve[4];
-    for(;;)
-    {
-        chassis.omega_z_last = ChassisGetOmega();
-        motor_list[MOTOR_YAW]->feed_fwd = chassis.omega_z_last ;
-        if(chassis_cmd.mode == SPIN)
-        {
-            chassis.output = PID_Increment(&chassis.pid[INNER], chassis.omega_z_last,CHS_SPIN_LMT);
-        }
-        else if(chassis_cmd.mode == FOLLOW)
-        {
-            chassis.output = PID_Position(&chassis.pid[OUTER], MotorGetVal(motor_list[MOTOR_YAW],MOTORANGLE,ORIGIN), CHASSIS_ZEROPOINT);
-            chassis.output = PID_Increment(&chassis.pid[INNER], chassis.omega_z_last, chassis.output);
-        }
+	static float solve[4];
+	PID_TypeDef pid_outer = {
+			.Kp = 0,
+			.Ki = 0,
+			.Kd = 0,
+			.Kf = 0,
+			.Output_Max = 10,
+			.Err_sum_Max = 100
+	};
+	
+	PID_TypeDef pid_inner = {
+			pid_inner . Kp = 0,
+			pid_inner . Ki = 0,
+			pid_inner . Kd = 0,
+			.Kf = 0,
+			.Output_Max = 4 * PI,//量程：RPS
+			.Err_sum_Max = 100
+	};
+	
+	chassis . pid[INNER] = pid_inner;
+	chassis . pid[OUTER] = pid_outer;
+	uint32_t time = osKernelGetTickCount ();
+	
+	for ( ;; )
+	{
+		chassis . omega_z_ref = ChassisGetOmega ();
+		motor_list[MOTOR_YAW] -> feed_fwd = chassis . omega_z_ref;
+		if ( chassis_cmd . mode == SPIN )
+		{
+			chassis . output = PID_Increment (&chassis . pid[INNER], chassis . omega_z_ref, CHS_SPIN_LMT);
+		}
+		else if ( chassis_cmd . mode == FOLLOW )
+		{
+			chassis . output = PID_Position (
+					&chassis . pid[OUTER], MotorGetVal (motor_list[MOTOR_YAW], MOTORANGLE, ORIGIN), CHASSIS_ZEROPOINT
+			                                );
+			chassis . output = PID_Increment (&chassis . pid[INNER], chassis . omega_z_ref, chassis . output);
+		}
 #if INFANTRY
-        OnmiSolve(&chassis_cmd, solve,0);
-#endif
-#if HERO
+		OnmiSolve (&chassis_cmd, solve, 0);
+#elif HERO
 		MecanumSolve(&chassis_cmd, solve,0);
 #endif
-        for(int i=0;i<4;i++)
-            MotorSetTar(motor_list[i+MOTOR_CHS_1], solve[i], ABS);
-
-        time = osKernelGetTickCount();
-        osDelayUntil(time + CHASSIS_TASK_PERIOD);
-    }
+		for ( int i = 0; i < 4; i ++ )
+			MotorSetTar (motor_list[i + MOTOR_CHS_1], solve[i], ABS);
+		
+		time = osKernelGetTickCount ();
+		osDelayUntil (time + CHASSIS_TASK_PERIOD);
+	}
 }

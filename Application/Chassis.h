@@ -35,9 +35,7 @@ typedef struct
 {
     float target;
     float output;
-    float omega_z_last;
-    float omega_z_now;
-    float omega_z_tar;
+    float omega_z_ref;
     PID_TypeDef pid[2];    //outer(or angle)(0)、inner(or speed)(1) circle
 }__attribute__((__packed__))Chassis_TypeDef;
 
