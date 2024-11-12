@@ -102,4 +102,6 @@ extern float PID_Increment( PID_TypeDef *hpid, float val_now, float target_now )
 
 extern void PID_Clear( PID_TypeDef *hpid );
 
+extern float FeedForward_Input(float tar,float *data);
+
 #endif

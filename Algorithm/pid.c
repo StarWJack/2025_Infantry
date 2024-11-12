@@ -138,43 +138,43 @@ static void F_Ramping_Target( PID_TypeDef *hpid )
 #endif
 
 // 输出限幅
-static void F_Output_Limit( PID_TypeDef *hpid )
+static void F_Output_Limit (PID_TypeDef *hpid)
 {
-	if ( hpid->Output > hpid->Output_Max )
+	if ( hpid -> Output > hpid -> Output_Max )
 	{
-		hpid->Output = hpid->Output_Max;
+		hpid -> Output = hpid -> Output_Max;
 	}
-	if ( hpid->Output < -( hpid->Output_Max ) )
+	if ( hpid -> Output < - (hpid -> Output_Max))
 	{
-		hpid->Output = -( hpid->Output_Max );
+		hpid -> Output = - (hpid -> Output_Max);
 	}
 }
 
 //积分限幅
-static void F_Integral_Limit( PID_TypeDef *hpid )
+static void F_Integral_Limit (PID_TypeDef *hpid)
 {
 	static float temp_output, temp_iout;
-	temp_iout = hpid->i_out + hpid->i_term;
-	temp_output = hpid->p_out + hpid->i_out + hpid->d_out;
+	temp_iout = hpid -> i_out + hpid -> i_term;
+	temp_output = hpid -> p_out + hpid -> i_out + hpid -> d_out;
 	//输出已经大于输出上下限限幅，清零本次积分
-	if ( abs( temp_output ) > hpid->Output_Max )
+	if ( abs(temp_output) > hpid -> Output_Max )
 	{
-		if ( hpid->Err_now * hpid->i_out > 0 ) // 积分却还在累积
+		if ( hpid -> Err_now * hpid -> i_out > 0 ) // 积分却还在累积
 		{
-			hpid->i_term = 0; // 当前积分项置零
+			hpid -> i_term = 0; // 当前积分项置零
 		}
 	}
 	//积分输出超过上限，等于最大积分输出
-	if ( temp_iout > hpid->integral_limit )
+	if ( temp_iout > hpid -> integral_limit )
 	{
-		hpid->i_term = 0;
-		hpid->i_out = hpid->integral_limit;
+		hpid -> i_term = 0;
+		hpid -> i_out = hpid -> integral_limit;
 	}
 	//积分输出超过下限，等于最小积分输出
-	if ( temp_iout < -hpid->integral_limit )
+	if ( temp_iout < - hpid -> integral_limit )
 	{
-		hpid->i_term = 0;
-		hpid->i_out = -hpid->integral_limit;
+		hpid -> i_term = 0;
+		hpid -> i_out = - hpid -> integral_limit;
 	}
 }
 
@@ -250,50 +250,44 @@ float PID_Calc(PID_TypeDef *hpid)
  * @retval 	控制量
  *
  */
-float PID_Position( PID_TypeDef *hpid, float val_now, float target_now )
+float PID_Position (PID_TypeDef *hpid, float val_now, float target_now)
 {
-	hpid->target = target_now;
-	hpid->measure = val_now;
-	hpid->Err_now = hpid->target - hpid->measure;
-
-	if(abs(hpid->Err_now)>=hpid->dead_band)
+	hpid -> target = target_now;
+	hpid -> measure = val_now;
+	hpid -> Err_now = hpid -> target - hpid -> measure;
+	
+	if ( abs(hpid -> Err_now) >= hpid -> dead_band )
 	{
-		hpid->Err_sum += hpid->Err_now;
-		// hpid->Err_sum += hpid->Err_now;
-		if( hpid->Err_sum < -hpid->Err_sum_Max )
+		hpid -> Err_sum += hpid -> Err_now;
+		
+		if ( hpid -> Err_sum < - hpid -> Err_sum_Max )
 		{
-			hpid->Err_sum = -hpid->Err_sum_Max;
+			hpid -> Err_sum = - hpid -> Err_sum_Max;
 		}
-		if( hpid->Err_sum > hpid->Err_sum_Max )
+		if ( hpid -> Err_sum > hpid -> Err_sum_Max )
 		{
-			hpid->Err_sum = hpid->Err_sum_Max;
+			hpid -> Err_sum = hpid -> Err_sum_Max;
 		}
-
-		hpid->p_out = hpid->Kp * hpid->Err_now;
-		hpid->i_out = hpid->Ki * hpid->Err_sum;
-		hpid->d_out = hpid->Kd * ( hpid->Err_now - hpid->Err_last );
-
-		hpid->Output = hpid->p_out + hpid->i_out + hpid->d_out;
-
-		hpid->Output += hpid->Kf * ( hpid->Output - hpid->Output_last ) / ( 1000 / CANBUS_TASK_PERIOD );//前馈
+		
+		hpid -> p_out = hpid -> Kp * hpid -> Err_now;
+		hpid -> i_out = hpid -> Ki * hpid -> Err_sum;
+		hpid -> d_out = hpid -> Kd * (hpid -> Err_now - hpid -> Err_last);
+		
+		hpid -> Output = hpid -> p_out + hpid -> i_out + hpid -> d_out;
 	}
 	else
 	{
-		hpid->Output=hpid->Output_last;
-		if(hpid->target==0&&hpid->last_target==0)
-		{
-			hpid->Output=0.0f;
-		}
+		hpid -> Output = 0.0f;
 	}
-	F_Output_Limit( hpid );
-
-	hpid->Err_pre = hpid->Err_last;
-	hpid->Err_last = hpid->Err_now;
-	hpid->Output_last = hpid->Output;
-	hpid->last_target = hpid->target;
-	hpid->last_measure = hpid->measure;
-
-	return hpid->Output;
+	F_Output_Limit (hpid);
+	
+	hpid -> Err_pre = hpid -> Err_last;
+	hpid -> Err_last = hpid -> Err_now;
+	hpid -> Output_last = hpid -> Output;
+	hpid -> last_target = hpid -> target;
+	hpid -> last_measure = hpid -> measure;
+	
+	return hpid -> Output;
 }
 
 /*
@@ -305,37 +299,32 @@ float PID_Position( PID_TypeDef *hpid, float val_now, float target_now )
  * @retval 	控制量
  *
  */
-float PID_Increment( PID_TypeDef *hpid, float val_now, float target_now )
+float PID_Increment (PID_TypeDef *hpid, float val_now, float target_now)
 {
-	hpid->target = target_now;
-	hpid->measure = val_now;
-	hpid->Err_now = hpid->target - hpid->measure;
-	if(abs(hpid->Err_now)>=hpid->dead_band)
+	hpid -> target = target_now;
+	hpid -> measure = val_now;
+	hpid -> Err_now = hpid -> target - hpid -> measure;
+	if ( abs(hpid -> Err_now - hpid ->Err_last) >= hpid -> dead_band )
 	{
-		hpid->p_out = hpid->Kp * ( hpid->Err_now - hpid->Err_last );
-		hpid->i_out = hpid->Ki * ( hpid->Err_now );
-		hpid->d_out = hpid->Kd * ( hpid->Err_now - 2 * hpid->Err_last - hpid->Err_pre );
-
-		hpid->Output += hpid->p_out + hpid->i_out + hpid->d_out +
-						hpid->Kf * ( hpid->Output - hpid->Output_last ) / ( 1000 / CANBUS_TASK_PERIOD );//前馈
+		hpid -> p_out = hpid -> Kp * (hpid -> Err_now - hpid -> Err_last);
+		hpid -> i_out = hpid -> Ki * (hpid -> Err_now);
+		hpid -> d_out = hpid -> Kd * (hpid -> Err_now - 2 * hpid -> Err_last - hpid -> Err_pre);
+		
+		hpid -> Output += hpid -> p_out + hpid -> i_out + hpid -> d_out ;
 	}
 	else
 	{
-		hpid->Output=hpid->Output_last;
-		if(hpid->target==0&&hpid->last_target==0)
-		{
-			hpid->Output=0.0f;
-		}
+		hpid -> Output = hpid -> Output_last;
 	}
-	F_Output_Limit( hpid );
-
-	hpid->Err_pre  = hpid->Err_last;
-	hpid->Err_last = hpid->Err_now;
-	hpid->Output_last = hpid->Output;
-	hpid->last_target = hpid->target;
-	hpid->last_measure = hpid->measure;
-
-	return hpid->Output;
+	F_Output_Limit (hpid);
+	
+	hpid -> Err_pre = hpid -> Err_last;
+	hpid -> Err_last = hpid -> Err_now;
+	hpid -> Output_last = hpid -> Output;
+	hpid -> last_target = hpid -> target;
+	hpid -> last_measure = hpid -> measure;
+	
+	return hpid -> Output;
 }
 
 /*
@@ -344,21 +333,27 @@ float PID_Increment( PID_TypeDef *hpid, float val_now, float target_now )
  * @retval 	无
  *
  */
-void PID_Clear( PID_TypeDef *hpid )
+void PID_Clear (PID_TypeDef *hpid)
 {
-
-    hpid->Err_pre = 0;
-    hpid->Err_last = 0;
-    hpid->Err_now = 0;
-    hpid->Err_sum = 0;
-	hpid->target = 0;
-	hpid->last_target = 0;
-	hpid->measure = 0;
-	hpid->last_measure = 0;
+	
+	hpid -> Err_pre = 0;
+	hpid -> Err_last = 0;
+	hpid -> Err_now = 0;
+	hpid -> Err_sum = 0;
+	hpid -> target = 0;
+	hpid -> last_target = 0;
+	hpid -> measure = 0;
+	hpid -> last_measure = 0;
 
 #if TEST_FEED
 	hpid->d_out_last = 0;
 	hpid->i_term = 0;
 #else
 #endif
+}
+
+//前馈
+float FeedForward_Input(float tar,float *data)
+{
+	return data[0] + data[1]*tar + data[2]*tar*tar;
 }
