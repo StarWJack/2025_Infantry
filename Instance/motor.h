@@ -33,7 +33,6 @@ typedef struct
     Motor_e motor_type;
     uint8_t enable;
     float output_max;
-    float zero_point;
 }Motor_InfoTypeDef;
 
 typedef struct
@@ -81,6 +80,7 @@ extern float data_view[10] ;
 extern void MotorOptLmt(Motor_TypeDef *motor, float lmt);
 extern void MotorStatusChange(Motor_TypeDef *motor, PID_Type_e newtype, float *source);
 extern void MotorCalc(void);
+extern void my_MotorCalc (void);
 extern void MotorInit(void);
 extern void MotorSetTar(Motor_TypeDef *motor, float val, ValSet_Type_e type);
 //extern void MotorSetTar(Motor_TypeDef *motor, float tar, uint8_t style);
