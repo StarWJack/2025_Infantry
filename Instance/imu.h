@@ -31,7 +31,7 @@ typedef struct
 {
     IMU_enum imu_type;
     Protocol_enum p_type;
-    float yaw_zero_point;//云台yaw轴零点（上电时刻指向底盘正方向）
+    float pitch_zero_point;//云台pitch轴零点
     float bias_g1;
     float bias_g2;
     float bias_a1;

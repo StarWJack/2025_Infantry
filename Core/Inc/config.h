@@ -85,13 +85,14 @@
 
 /*步兵1*/
 
-// #define PITCH_UP_BOUND	2*PI*7708/8192.0f
-// #define PITCH_LW_BOUND  2*PI*400/8192.0f	//pitch轴可动范围上下界
-// #define PITCH_MID       2*PI*34/8192.0f  //pitch轴中间位置
-#define PITCH_UP_BOUND	3.58f
-#define PITCH_LW_BOUND  PI	//pitch轴可动范围上下界
-#define PITCH_MID       (0 +PI)  //pitch轴中间位置
-#define CHASSIS_ZEROPOINT   7851.0f	//在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
+#define PITCH_UP_BOUND    (8192.0f - 7708.0f)
+#define PITCH_LW_BOUND  400.0f    //pitch轴可动范围上下界
+#define PITCH_MID       34.0f  //pitch轴中间位置
+
+//#define PITCH_UP_BOUND	3.58f
+//#define PITCH_LW_BOUND  PI	//pitch轴可动范围上下界
+//#define PITCH_MID       (0 +PI)  //pitch轴中间位置
+#define CHASSIS_ZEROPOINT   7851.0f    //在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度
 #define AMMO_DIR_INV //拨弹盘为顺时针旋转
 
 
@@ -132,9 +133,9 @@
 
 typedef enum
 {
-    ABS=0,
-    INCR=1
-}ValSet_Type_e;
+	ABS = 0,
+	INCR = 1
+} ValSet_Type_e;
 
 //#define OUTER 0
 //#define INNER 1
@@ -142,11 +143,9 @@ typedef enum
 
 typedef enum
 {
-    OUTER=0,
-    INNER=1,
-}PID_LOOP_e;
-
-
+	OUTER = 0,
+	INNER = 1,
+} PID_LOOP_e;
 
 
 #endif
