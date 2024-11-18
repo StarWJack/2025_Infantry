@@ -96,6 +96,8 @@ typedef enum
 	AMMO
 } PID_Type_e;
 
+extern float fit_data[5] ;
+
 extern float PID_Position( PID_TypeDef *hpid, float val_now, float target_now );
 
 extern float PID_Increment( PID_TypeDef *hpid, float val_now, float target_now );

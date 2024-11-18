@@ -227,9 +227,9 @@ void IMUInit ()
 	imu1.info.bias_g2 = 0;
 	imu1.info.bias_a1 = 0;
 #else
-	imu1 . info . bias_g1 = - 2065790 / 100424 * BMI088_GYRO_500_SEN;
-	imu1 . info . bias_g2 = 682414 / 100424 * BMI088_GYRO_500_SEN;
-	imu1 . info . bias_a1 = - 277466816 / 100424 * BMI088_ACCEL_3G_SEN;
+	imu1 . info . bias_g1 = -4895900 / 208192 * BMI088_GYRO_500_SEN;
+	imu1 . info . bias_g2 = 1707958 / 208192 * BMI088_GYRO_500_SEN;
+	imu1 . info . bias_a1 = -126158552 / 208192 * BMI088_ACCEL_3G_SEN;
 #endif
 	
 	
