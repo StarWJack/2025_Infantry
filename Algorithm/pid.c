@@ -1,5 +1,6 @@
 #include "pid.h"
 
+
 #if TEST_FEED
 /* ----------------------------下面是pid优化环节的实现---------------------------- */
 //TODO(GUATAI)dt获取需要进一步联动DWT内核定时器
@@ -252,12 +253,9 @@ float PID_Calc(PID_TypeDef *hpid)
  */
 float PID_Position (PID_TypeDef *hpid, float val_now, float target_now)
 {
-	hpid -> target = target_now;
-	hpid -> measure = val_now;
-	hpid -> Err_now = hpid -> target - hpid -> measure;
-	
-	if ( abs(hpid -> Err_now) >= hpid -> dead_band )
-	{
+
+	hpid -> Err_now = target_now - val_now;
+
 		hpid -> Err_sum += hpid -> Err_now;
 		
 		if ( hpid -> Err_sum < - hpid -> Err_sum_Max )
@@ -274,18 +272,12 @@ float PID_Position (PID_TypeDef *hpid, float val_now, float target_now)
 		hpid -> d_out = hpid -> Kd * (hpid -> Err_now - hpid -> Err_last);
 		
 		hpid -> Output = hpid -> p_out + hpid -> i_out + hpid -> d_out;
-	}
-	else
-	{
-		hpid -> Output = 0.0f;
-	}
+
 	F_Output_Limit (hpid);
 	
 	hpid -> Err_pre = hpid -> Err_last;
 	hpid -> Err_last = hpid -> Err_now;
 	hpid -> Output_last = hpid -> Output;
-	hpid -> last_target = hpid -> target;
-	hpid -> last_measure = hpid -> measure;
 	
 	return hpid -> Output;
 }
@@ -301,30 +293,22 @@ float PID_Position (PID_TypeDef *hpid, float val_now, float target_now)
  */
 float PID_Increment (PID_TypeDef *hpid, float val_now, float target_now)
 {
-	hpid -> target = target_now;
-	hpid -> measure = val_now;
-	hpid -> Err_now = hpid -> target - hpid -> measure;
-	if ( abs(hpid -> Err_now - hpid ->Err_last) >= hpid -> dead_band )
-	{
-		hpid -> p_out = hpid -> Kp * (hpid -> Err_now - hpid -> Err_last);
-		hpid -> i_out = hpid -> Ki * (hpid -> Err_now);
-		hpid -> d_out = hpid -> Kd * (hpid -> Err_now - 2 * hpid -> Err_last - hpid -> Err_pre);
-		
-		hpid -> Output += hpid -> p_out + hpid -> i_out + hpid -> d_out ;
-	}
-	else
-	{
-		hpid -> Output = hpid -> Output_last;
-	}
-	F_Output_Limit (hpid);
+
+	hpid->Err_now = target_now - val_now;
+
+	hpid->p_out = hpid->Kp * ( hpid->Err_now - hpid->Err_last );
+	hpid->i_out = hpid->Ki * ( hpid->Err_now );
+	hpid->d_out = hpid->Kd * ( hpid->Err_now - hpid->Err_last - hpid->Err_pre );
+
+	hpid->Output += hpid->p_out + hpid->i_out + hpid->d_out;
 	
-	hpid -> Err_pre = hpid -> Err_last;
-	hpid -> Err_last = hpid -> Err_now;
+	F_Output_Limit( hpid );
+
+	hpid->Err_pre = hpid->Err_now - hpid->Err_last;
+	hpid->Err_last = hpid->Err_now;
+
 	hpid -> Output_last = hpid -> Output;
-	hpid -> last_target = hpid -> target;
-	hpid -> last_measure = hpid -> measure;
-	
-	return hpid -> Output;
+	return hpid->Output;
 }
 
 /*
@@ -340,10 +324,6 @@ void PID_Clear (PID_TypeDef *hpid)
 	hpid -> Err_last = 0;
 	hpid -> Err_now = 0;
 	hpid -> Err_sum = 0;
-	hpid -> target = 0;
-	hpid -> last_target = 0;
-	hpid -> measure = 0;
-	hpid -> last_measure = 0;
 
 #if TEST_FEED
 	hpid->d_out_last = 0;
@@ -352,8 +332,16 @@ void PID_Clear (PID_TypeDef *hpid)
 #endif
 }
 
-//前馈
-float FeedForward_Input(float tar,float *data)
+
+//增量式前馈
+void FeedForward_Input(PID_TypeDef *hpid, float tar)
 {
-	return data[0] + data[1]*tar + data[2]*tar*tar;
+
+	hpid -> Output_feed =0;
+	if(abs(tar) > 0.5f)
+	{
+		float tar_tmp = abs(tar);
+		hpid -> Output_feed =  FEED_PARAM0 + FEED_PARAM1 * tar_tmp + FEED_PARAM2 * tar_tmp* tar_tmp;
+		hpid -> Output_feed = tar > 0 ? hpid -> Output_feed : -hpid -> Output_feed;
+	}
 }
