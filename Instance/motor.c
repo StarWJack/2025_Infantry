@@ -10,7 +10,8 @@
 #include "Chassis.h"
 #include "Gimbal.h"
 
-//就近旋转
+
+//就近旋转，未完成
 #define MOTORPROXIMITY(tar, ref)
 
 
@@ -41,12 +42,12 @@ void MotorCalc (void)
 	{
 		
 		motor_list[i] -> output = 0;
-		PID_Type_e type = motor_list[i] -> info . pid_type;
+		PID_Type_e pid_type = motor_list[i] -> info . pid_type;
 		
 		float val_now;
 		float *tar_now;
 		tar_now = &motor_list[i] -> target;
-		if ( type == SPEED )
+		if ( pid_type == SPEED )
 		{
 			float tar_tmp = 0;
 			//输出轴转速转为转子转速
@@ -59,9 +60,9 @@ void MotorCalc (void)
 					&(motor_list[i] -> pid[SPEED]), MotorGetVal (motor_list[i], MOTORSPEED, RAD), tar_tmp
 			                                        );
 		}
-		else if ( type == ANGLE )
+		else if ( pid_type == ANGLE )
 		{
-			//对Dji电机角度多圈转单圈
+			//对Dji电机过零点处理
 			if ( motor_list[i] -> info . motor_type != OTHER )
 			{
 				if ( *tar_now - val_now > PI ) *tar_now -= 2 * PI;
@@ -71,14 +72,14 @@ void MotorCalc (void)
 					&(motor_list[i] -> pid[ANGLE]), MotorGetVal (motor_list[i], MOTORANGLE, RAD), *tar_now
 			                                       );
 		}
-		else if ( type == DUAL_LOOP )
+		else if ( pid_type == DUAL_LOOP )
 		{
 			//  motor_list[i]->output = PID_Increment(&(motor_list[i]->pid[SPEED]), MotorGetVal(motor_list[i],MOTORSPEED,RAD), *tar_now);
 			if ( motor_list[i] -> value == NULL)
 				val_now = MotorGetVal (motor_list[i], MOTORANGLE, RAD);
 			else
 				val_now = MotorGetVal (motor_list[i], IMU, RAD);
-			// 对Dji电机角度多圈转单圈
+			// 对Dji电机过零点处理
 			if ( motor_list[i] -> info . motor_type != OTHER )
 			{
 				while ( *tar_now - val_now > PI )
@@ -101,7 +102,7 @@ void MotorCalc (void)
 					motor_list[i] -> output
 			                                        );
 		}
-		else if ( type == AMMO )
+		else if ( pid_type == AMMO )
 		{
 			if ( gimbal_cmd . shooter_state == SHOOTER_NORMAL )
 			{
@@ -142,25 +143,41 @@ void MotorCalc (void)
 	return;
 }
 
-
+//PID输出
 void my_MotorCalc (void)
 {
 	static float tar = 0, ref = 0;
-	//MOTOR_YAW 1
+//IMU控制
 	tar = motor_list[MOTOR_YAW] -> target;
-	ref = MotorGetVal (motor_list[MOTOR_YAW], IMU, RAD);
-	tar = MotorProximity (tar, ref);
-	motor_list[MOTOR_YAW] -> output = PID_Position (&(motor_list[MOTOR_YAW] -> pid[ANGLE]), ref, tar);
-	motor_list[MOTOR_YAW] -> output += motor_list[MOTOR_YAW] -> feed_fwd;//补偿小陀螺时云台的静态误差
 	
-	tar = motor_list[MOTOR_YAW] -> output;
+	ref = MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN);
+	while(tar-ref > PI)
+	 	ref += 2 * PI ;
+	while(tar-ref < -PI)
+	 	tar += 2 * PI ;
+
+	motor_list[MOTOR_YAW] -> output_Position = PID_Position (&(motor_list[MOTOR_YAW] -> pid[ANGLE]), ref, tar);
+	motor_list[MOTOR_YAW] -> output = motor_list[MOTOR_YAW] -> output_Position;
+
+	tar = motor_list[MOTOR_YAW] -> output_Position;
+
 	ref = MotorGetVal (motor_list[MOTOR_YAW], MOTORSPEED, RAD);
-	motor_list[MOTOR_YAW] -> output = PID_Increment (&(motor_list[MOTOR_YAW] -> pid[SPEED]), ref, tar);
-	
-	//#define MOTOR_PITCH 0
+	FeedForward_Input(&(motor_list[MOTOR_YAW] -> pid[SPEED]) , tar);
+
+	motor_list[MOTOR_YAW] -> output = PID_Increment (&(motor_list[MOTOR_YAW] -> pid[SPEED]), ref, tar) ;
+	motor_list[MOTOR_YAW] -> output += motor_list[MOTOR_YAW] -> pid[SPEED].Output_feed;
+
+//单增量式
+//	  tar = motor_list[MOTOR_YAW] -> target;
+//	  ref = MotorGetVal (motor_list[MOTOR_YAW], MOTORSPEED, RAD); //motor->data.speed can线返回的速度
+//	  FeedForward_Input(&(motor_list[MOTOR_YAW] -> pid[SPEED]) , tar);
+//
+//	  motor_list[MOTOR_YAW] -> output = PID_Increment (&(motor_list[MOTOR_YAW] -> pid[SPEED]), ref, tar);
+//	  motor_list[MOTOR_YAW] -> output += motor_list[MOTOR_YAW] -> pid[SPEED].Output_feed;
+
+	//#define MOTOR_PITCH 0  IMU控制
 	tar = motor_list[MOTOR_PITCH] -> target;
 	ref = MotorGetVal (motor_list[MOTOR_PITCH], IMU, RAD);
-	tar = MotorProximity (tar, ref);
 	motor_list[MOTOR_PITCH] -> output = PID_Position (&(motor_list[MOTOR_PITCH] -> pid[ANGLE]), ref, tar);
 	motor_list[MOTOR_PITCH] -> output *= - 1.0f;//运动方向为负
 	
@@ -174,6 +191,7 @@ void my_MotorCalc (void)
 	//#define MOTOR_CHS_4 5
 	for ( uint8_t i = MOTOR_CHS_1; i <= MOTOR_CHS_4; i ++ )
 	{
+		//tar = 0;
 		tar = motor_list[i] -> target;
 		ref = MotorGetVal (motor_list[i], MOTORSPEED, RAD);
 		tar = tar * 3591 / 187;
@@ -217,8 +235,8 @@ void my_MotorCalc (void)
 	tar = motor_list[MOTOR_AMMO] -> output;
 	ref = MotorGetVal (motor_list[MOTOR_AMMO], MOTORSPEED, RAD);
 	motor_list[MOTOR_AMMO] -> output = PID_Increment (&motor_list[MOTOR_AMMO] -> pid[SPEED], ref, tar);
-	ref_last = ref;
 	
+	ref_last = ref;
 	
 	//#define MOTOR_SHT_L 7
 	//#define MOTOR_SHT_R 8
@@ -255,13 +273,14 @@ float MotorGetVal (Motor_TypeDef *motor, MOTOR_Feedback_e feedback, DataType_e t
 		else
 			val = motor -> data . speed * 2 * PI / 60.0f;//RPM->RPS
 	else
-		val = motor -> value (motor);
+		val = motor -> value (motor);//调用 motor 结构体中的 value 函数，并将 motor 作为参数传递给该函数，然后将返回值赋给 val 变量
+		                             //如果feedback不是MOTORANGLE或MOTORSPEED，那么就调用motor结构体中的value函数(当前代码在MotorRegist和MotorInit定义)
 	return val;
 }
 
 float MotorGetIMU0_Yaw (Motor_TypeDef *motor)
 {
-	return imu_list[0] -> yaw (imu_list[0]);
+	return imu_list[0] -> yaw (imu_list[0]); //已做过+PI处理
 }
 
 float MotorGetIMU0_Pitch (Motor_TypeDef *motor)
@@ -292,6 +311,7 @@ void MotorCanCbk (Can_InfoTypedef *st, uint8_t *rxdata, uint8_t list_id)
 	motor_list[list_id] -> data . current = (int16_t) (rxdata[4] << 8) + rxdata[5];
 	motor_list[list_id] -> data . temp = rxdata[6];
 }
+
 
 void MotorFillMsg (Can_InfoTypedef *st, uint8_t *txdata, uint8_t list_id)
 {
@@ -393,6 +413,7 @@ void MotorRegist (Motor_InitTypedef st)
 	motor . pid[INNER] = st . pid_inner;
 	motor . feed_fwd = 0;
 //    if(st.pid_type == DUAL_LOOP)
+    //定义了一个函数指针value，存放一个函数
 	motor . value = st . source;    //avoid null pointer
 	motor_list[st . list_id] = malloc (sizeof (Motor_TypeDef));
 	memcpy (motor_list[st . list_id], &motor, sizeof (Motor_TypeDef));
@@ -401,22 +422,21 @@ void MotorRegist (Motor_InitTypedef st)
 void MotorInit ()
 {
 	PID_TypeDef pid_outer = {
-			.Kp = 45,
+			.Kp = 8.5,  //大小应与遥控器输入量一同调节，p太大应引起目标点抖动
 			.Ki = 0,
 			.Kd = 0,
 			.Kf = 0,
-			.Output_Max = 10,
-			.Err_sum_Max = 500,
-			.dead_band = 0.0f
+			.Output_Max = 7,
+			.Err_sum_Max = 100,
 	};
 	
 	PID_TypeDef pid_inner = {
-			pid_inner . Kp = 2750,
-			pid_inner . Ki = 12,
-			pid_inner . Kd = 12,
-			.Kf = 0,
-			.Output_Max = 15000,
-			.dead_band = 0.0f
+//			pid_inner . Kp = 4050,  //2000-4000  ，3000-4000归中较慢
+			pid_inner . Kp = 3800,
+			pid_inner . Ki = 8,   //太小会回弹
+			pid_inner . Kd = 0,
+			pid_inner . Kf = 1,
+			pid_inner . Output_Max = 12000, //5000-15000最合适
 	};
 	
 	Motor_InitTypedef init = {
@@ -430,7 +450,7 @@ void MotorInit ()
 			.rxheader_id = 0x205,
 			.pid_outer = pid_outer,
 			.pid_inner = pid_inner,
-			.output_max = 15000
+			.output_max = 30000
 	};
 	
 	/* Yaw init */
@@ -448,24 +468,24 @@ void MotorInit ()
 	pid_outer . Kd = 0;
 	pid_outer . Kf = 0;
 	pid_outer . Output_Max = 10;
-	pid_outer . dead_band = 0.0f;
 	init . pid_outer = pid_outer;
 	
-	pid_inner . Kp = 3500;
-	pid_inner . Ki = 100;
+	pid_inner . Kp = 1000;//太大过零点噪声极大
+	pid_inner . Ki = 15;
 	pid_inner . Kd = 0;
-	pid_inner . Output_Max = 20000;
-	pid_inner . dead_band = 0.0f;
+	pid_inner . Kf = 0;
+	pid_inner . Output_Max = 8000;
+//	pid_inner . Output_Max = 0;//改为0调试
 	init . pid_inner = pid_inner;
 	MotorRegist (init);
 	
 	/* Chassis init */
-	pid_inner . Kp = 1;
-	pid_inner . Ki = 0.1f;
+	pid_inner . Kp = 12;
+	pid_inner . Ki = 0.01f;
 	pid_inner . Kd = 0;
+	pid_inner . Kf = 0;
 	pid_inner . Err_sum_Max = 1000;
 	pid_inner . Output_Max = 5000;
-	pid_inner . dead_band = 0.0f;
 	init . pid_inner = pid_inner;
 	init . can_id = 1;
 	init . hcan = &hcan1;
@@ -493,9 +513,12 @@ void MotorInit ()
 	MotorRegist (init);
 	
 	//shooter init
-	pid_inner . Kp = 0;
+	pid_inner . Kp = 10;
 	pid_inner . Ki = 0;
 	pid_inner . Kd = 0;
+	pid_inner . Kf = 0;
+	// pid_inner . Output_Max = 5000;
+	pid_inner . Output_Max = 0;
 	init . pid_inner = pid_inner;
 	init . hcan = &hcan2;
 	init . can_id = 1;
@@ -510,17 +533,18 @@ void MotorInit ()
 	MotorRegist (init);
 	
 	//ammofeeder init
-	pid_outer . Kp = 0;
+	pid_outer . Kp = 8;
 	pid_outer . Ki = 0;
 	pid_outer . Kd = 0;
+	pid_outer . Kf = 0;
 	pid_outer . Output_Max = 15000;
 	pid_outer . Err_sum_Max = 1000;
-	pid_outer . dead_band = 0.0f;
-	pid_inner . Kp = 0;
-	pid_inner . Ki = 0;
+	pid_inner . Kp = 100;
+	pid_inner . Ki = 1;
 	pid_inner . Kd = 0;
-	pid_inner . Output_Max = 8000;
-	pid_inner . dead_band = 0.0f;
+	pid_inner . Kf = 0;
+	// pid_inner . Output_Max = 8000;
+	pid_inner . Output_Max = 0;
 	init . pid_inner = pid_inner;
 	init . pid_outer = pid_outer;
 	init . can_id = 7;
