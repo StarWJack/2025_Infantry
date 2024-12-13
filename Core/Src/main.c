@@ -38,6 +38,8 @@
 #include "sin.h"
 #include "ui.h"
 #include "motor.h"
+#include "CanInst.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -138,10 +140,25 @@ int main (void)
 	MX_NVIC_Init ();
 	/* USER CODE BEGIN 2 */
 	
-	ControlInit ();
-	CANBusInit ();
-	GimbalInit ();
-	ChassisInit ();
+	/* 此段只能放在main.c里，否则cna2无法读取回调信息 */
+	HAL_CAN_ActivateNotification (&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
+	HAL_CAN_Start (&hcan1);
+	#ifdef USE_CAN2
+	HAL_CAN_ActivateNotification (&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
+	HAL_CAN_Start (&hcan2);
+	#endif
+
+	/* 模块初始化 */
+	MotorInit();//pid参数等各项初始化
+	CanInit();
+	IMUInit();//imu初始化，读取转换后的pitch和yaw以及roll数据，还有零点设置问题
+	RemoteInit();
+	RefereeInit();
+	/* 任务初始化 */
+	ControlInit();
+	CANBusInit();
+	GimbalInit();
+	ChassisInit();
 //  UI_taskInit();
 	
 	/* USER CODE END 2 */

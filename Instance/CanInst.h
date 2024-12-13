@@ -16,7 +16,7 @@ typedef struct can_info_s
     uint8_t CAN_id;
     CAN_HandleTypeDef *hcan_x;
     // @param:list_id :调用此can的实体在其相应注册列表中的顺次
-    void (*FillTxMsg)(struct can_info_s *st, uint8_t *txdata, uint8_t list_id);
+    void (*FillTxMsg)(struct can_info_s *st, uint8_t *txdata, uint8_t list_id); //FillTxMsg--在MotorRegist中
     void (*CbkHandel)(struct can_info_s *st, uint8_t *rxdata, uint8_t list_id);
 }Can_InfoTypedef;
 

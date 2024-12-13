@@ -2,6 +2,10 @@
 #include "config.h"
 #include "motor.h"
 #include "string.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "main.h"
+#include "cmsis_os.h"
 
 Can_InfoTypedef *can_list[CAN_INST_NUM];
 int8_t can_index[CAN_NUM][CAN_HEADER_NUM][9];
@@ -21,6 +25,7 @@ void CanSendMsg ()
 					can_list[tmp_idx], can_txdata, (tmp_idx >= MOTOR_NUM ? tmp_idx - MOTOR_NUM : tmp_idx));
 		}
 		HAL_CAN_AddTxMessage (&hcan1, can_txheader[i], can_txdata, (uint32_t * ) CAN_TX_MAILBOX0);
+
 		#ifdef USE_CAN2
 		memset (can_txdata, 0, sizeof (can_txdata));
 		for (int j = 0; can_index[1][i][j] != (- 1); j ++)
@@ -29,6 +34,7 @@ void CanSendMsg ()
 			can_list[tmp_idx] -> FillTxMsg (can_list[tmp_idx], can_txdata, tmp_idx);
 		}
 		HAL_CAN_AddTxMessage (&hcan2, can_txheader[i], can_txdata, (uint32_t * ) CAN_TX_MAILBOX0);
+
 		#endif
 	}
 }
@@ -48,6 +54,9 @@ void Can_Filter1Config (void)
 	HAL_CAN_ConfigFilter (&hcan1, &Filter);
 	
 	#ifdef USE_CAN2
+	//zyy --- 要改
+	// Filter . FilterBank = 15;
+	// Filter . FilterFIFOAssignment = CAN_FILTER_FIFO1;
 	HAL_CAN_ConfigFilter (&hcan2, &Filter);
 	#endif
 	return;
@@ -55,12 +64,6 @@ void Can_Filter1Config (void)
 
 void CanInit ()
 {
-	HAL_CAN_ActivateNotification (&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
-	HAL_CAN_Start (&hcan1);
-#ifdef USE_CAN2
-	HAL_CAN_ActivateNotification (&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
-	HAL_CAN_Start (&hcan2);
-#endif
 	for (int i = 0; i < MOTOR_NUM; i ++)
 	{
 		can_list[i] = &(motor_list[i] -> can);
@@ -84,7 +87,7 @@ void CanInit ()
 			{
 				if (can_list[j] -> hcan_x == &hcan1)
 					can_index[0][i][count_1 ++] = j;
-						#ifdef USE_CAN2
+				#ifdef USE_CAN2
 				else if (can_list[j] -> hcan_x == &hcan2)
 					can_index[1][i][count_2 ++] = j;
 				#endif
@@ -101,7 +104,7 @@ void CanCbkHandle (CAN_HandleTypeDef *hcan)
 	uint8_t static data[8];
 	if (hcan -> Instance == CAN1)
 	{
-		
+
 		HAL_CAN_GetRxMessage (&hcan1, CAN_RX_FIFO0, &header, data);
 		for (int i = 0; i < CAN_INST_NUM; i ++)
 		{
@@ -110,7 +113,7 @@ void CanCbkHandle (CAN_HandleTypeDef *hcan)
 		}
 	}
 	
-	#ifdef USE_CAN2
+	#ifdef USE_CAN2 //如果定义了USE_CAN2就使用CAN2
 	if (hcan -> Instance == CAN2)
 	{
 		HAL_CAN_GetRxMessage (&hcan2, CAN_RX_FIFO0, &header, data);
@@ -121,7 +124,6 @@ void CanCbkHandle (CAN_HandleTypeDef *hcan)
 		}
 	}
 	#endif
-	
 }
 
 void HAL_CAN_RxFifo0MsgPendingCallback (CAN_HandleTypeDef *hcan)
