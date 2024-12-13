@@ -16,7 +16,7 @@
 #include "usbd_cdc_if.h"
 #include "Serial.h"
 #include "referee.h"
-
+#include "usart.h"
 
 osThreadId_t control_task_handel;
 
@@ -48,8 +48,8 @@ void ChassisCmdTrans (Chassis_CmdTypedef *cmd, float chs_zeropoint, float gim_an
 	float vy_tmp = - cmd -> vx * sinf (bias_tmp) + cmd -> vy * cosf (bias_tmp);
 	cmd -> vx = vx_tmp;
 	cmd -> vy = vy_tmp;
-	
 }
+
 
 void KeyboardCtrl (Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 {
@@ -65,14 +65,17 @@ void KeyboardCtrl (Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 		chs -> mode = FOLLOW;
 }
 
+//canbus--RC_Ctl.rc.sw1 == 1 || RC_Ctl.rc.sw1 == 3 是开启状态
 void RemoteCtrl (Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 {
-	chs -> vx = (float) RC_Ctl . rc . ch2 * REMOTE_X_SEN;
-	chs -> vy = (float) RC_Ctl . rc . ch1 * REMOTE_Y_SEN;
+
+	chs -> vx = (float)- RC_Ctl . rc . ch2 * REMOTE_X_SEN;
+	chs -> vy = (float)- RC_Ctl . rc . ch1 * REMOTE_Y_SEN;
 	gim -> v_yaw = (float) - RC_Ctl . rc . ch3 * REMOTE_YAW_SEN;
 	gim -> v_pitch = (float) - RC_Ctl . rc . ch4 * REMOTE_PITCH_SEN;
 	
 	chs -> mode = RC_Ctl . rc . sw1;
+	//sw2的控制模式，sw1在chassis
 	if ( RC_Ctl . rc . sw2 == 2 || RC_Ctl . rc . sw2 == 0 )
 	{
 		gim -> shooter = STOP;
@@ -88,18 +91,15 @@ void RemoteCtrl (Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 			
 		gim -> friction_state = 1;
 	}
-	
-	
+
 }
 
-
-//TODO:添加底盘跟随和小陀螺时云台自稳
+//TODO:小陀螺时云台自稳
 void ControlTask (void *argument)
 {
 	RemoteInit ();
 	RefereeInit ();
 	uint32_t time = osKernelGetTickCount ();
-	
 	for ( ;; )
 	{
 		UnPack_Data_ROS2 (buf_receive_from_nuc, &aim_packet_from_nuc, sizeof (aim_packet_from_nuc));
@@ -109,18 +109,20 @@ void ControlTask (void *argument)
 #endif
 		//云台坐标系转底盘坐标系
 		ChassisCmdTrans (&chassis_cmd, CHASSIS_ZEROPOINT, MotorGetVal (motor_list[MOTOR_YAW], MOTORANGLE, ORIGIN));
-		
-		vofa_demo (
-				motor_list[MOTOR_CHS_1] -> pid[SPEED] . Err_now,
-				motor_list[MOTOR_CHS_1] -> pid[SPEED] . Err_last,
-				motor_list[MOTOR_CHS_1] -> pid[SPEED] . Err_pre,
-				motor_list[MOTOR_CHS_1] -> target,
-				MotorGetVal (motor_list[MOTOR_CHS_1], MOTORSPEED, RAD),
-				robo_state
-		          );
-		
+		// HAL_UART_Transmit(&huart1,&(motor_list[MOTOR_YAW] -> output), 4, 0xff);
+
+
+		// vofa_demo3((imu_list[0] -> angle[2]+PI)*1000,
+		// 		   motor_list[MOTOR_PITCH] -> target *1000,
+		// 		   motor_list[MOTOR_PITCH] ->pid[1].Output);
+
+		vofa_demo3(MotorGetVal(motor_list[AMMO],MOTORSPEED,ORIGIN),
+				   motor_list[MOTOR_AMMO] -> target,
+				   RC_Ctl .rc.wheel);
+
 		Pack_And_Send_Data_ROS2 (&aim_packet_to_nuc);
-		
+		// FeedForward_Input();
+
 		time = osKernelGetTickCount ();
 		osDelayUntil (time + CONTROL_TASK_PERIOD);
 	}
