@@ -18,9 +18,9 @@
 
 typedef enum
 {
-//    NOSPIN  ,//不动
+    SPIN    = 1, //小陀螺
     FOLLOW  = 3,//跟随
-    SPIN    = 1 //小陀螺
+    SYOP    = 2//不动
 }chassis_mode_e;
 
 
@@ -28,12 +28,14 @@ typedef struct
 {
     float vx;
     float vy;
+    float omega_z; //底盘输入的角速度(弧度)
     chassis_mode_e mode;
 }__attribute__((__packed__))Chassis_CmdTypedef;
 
 typedef struct
 {
     float target;
+    float value;
     float output;
     float omega_z_ref;
     PID_TypeDef pid[2];    //outer(or angle)(0)、inner(or speed)(1) circle
