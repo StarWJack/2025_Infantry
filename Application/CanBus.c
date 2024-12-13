@@ -26,15 +26,11 @@ void CANBusInit ()
 
 uint32_t diff = 0;
 
+//TODO:修改控制逻辑
 void CANBusTask (void *argument)
 {
-
-	MotorInit ();
-	CanInit ();
-	IMUInit ();
-	
-	robo_state = BAN;
 	uint32_t time = osKernelGetTickCount ();
+	robo_state = BAN;
 	
 	for (;;)
 	{
@@ -43,7 +39,8 @@ void CANBusTask (void *argument)
 		{
 			MotorStop (NULL);
 			robo_state = BAN;
-		} else
+		} 
+		else
 		{
 			if (robo_state == BAN)
 			{
@@ -51,9 +48,10 @@ void CANBusTask (void *argument)
 					motor_list[i] -> info . enable = 1;
 				GimbalMotorPosi_Init();
 			}
-			MotorCalc ();
+			my_MotorCalc ();
 			robo_state = NORMAL;
 		}
+
 		CanSendMsg ();
 		imu_list[0] -> update (imu_list[0]);
 		time = osKernelGetTickCount ();
