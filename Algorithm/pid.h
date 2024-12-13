@@ -13,6 +13,35 @@
 #define TEST_FEED 0
 //TODO(GUATAI)输入处理待测试
 #define TEST_INPUT 0
+
+//定义前馈各阶参数
+//由正负数据得出的参数1
+// #define FEED_PARAM0 615.6f
+// #define FEED_PARAM1 1139.0f
+// #define FEED_PARAM2 -14.49f
+// #define FEED_PARAM3 -2.729f
+// #define FEED_PARAM4 0.04651f
+// #define FEED_PARAM5 0.006233f
+//只由正数据
+//#define FEED_PARAM0 1579.0f
+//#define FEED_PARAM1 700.0f
+//#define FEED_PARAM2 -14.42f
+//#define FEED_PARAM3 5.3938f
+//#define FEED_PARAM4 0.04975f
+//#define FEED_PARAM5 0.01144f
+//v1.2
+//#define FEED_PARAM0 794.4f
+//#define FEED_PARAM1 2466.0f
+//#define FEED_PARAM2 -1124
+//#define FEED_PARAM3 273
+//#define FEED_PARAM4 -25.97f
+//#define FEED_PARAM5 0.7919f
+//v1.3,最优版(无带载)
+#define FEED_PARAM0 298.2f
+#define FEED_PARAM1 1214
+#define FEED_PARAM2 -26.32
+
+
 /*
  * 先暂时T:采样周期0.01s(10ms)
  * (根据输出大小调整合适单位)
@@ -84,8 +113,11 @@ typedef struct __PID_TypeDef
 	float Err_sum_Max;
 
 	float Output;
+	float Output_feed;
 	float Output_last;
 	float integral_limit;     // 积分限幅
+	float count;     //PID死区标志
+	float f_err;//前馈误差输出值
 } PID_TypeDef;
 
 typedef enum
@@ -104,6 +136,6 @@ extern float PID_Increment( PID_TypeDef *hpid, float val_now, float target_now )
 
 extern void PID_Clear( PID_TypeDef *hpid );
 
-extern float FeedForward_Input(float tar,float *data);
+extern float FeedForward_Input(PID_TypeDef *hpid,float tar);
 
 #endif
