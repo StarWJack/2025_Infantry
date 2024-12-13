@@ -15,20 +15,33 @@ Gimbal_CmdTypedef gimbal_cmd;
 
 void GimbalCtrl (Gimbal_CmdTypedef *st)
 {
-	float tmp = motor_list[MOTOR_YAW] -> target + st -> v_yaw;
-	while ( tmp > PI )
-		tmp -= 2 * PI;
-	while ( tmp < - PI )
-		tmp += 2 * PI;
-	
+	//目标值+增量
+ 	float tmp = motor_list[MOTOR_YAW] -> target + st -> v_yaw ;
+// （0 < tmp < 2*PI) 过零点限制范围
+ 	while ( tmp > 2*PI )
+ 		tmp -= 2 * PI;
+ 	while ( tmp <0 )
+ 		tmp += 2 * PI;
+
+// 	while ( tmp > 8192 )
+// 			tmp -= 8192;
+// 	while ( tmp <0 )
+// 			tmp += 8192;
+//	float tmp = st -> v_yaw ;
 	MotorSetTar (motor_list[MOTOR_YAW], tmp, ABS);
 	
+	// tmp = motor_list[MOTOR_PITCH] -> target - st -> v_pitch;
+	// if ( tmp < PI - (PITCH_LW_BOUND - imu_list[0] -> info . pitch_zero_point) / 8192 * 2 * PI )
+	// tmp = PI - (PITCH_LW_BOUND - imu_list[0] -> info . pitch_zero_point) / 8192 * 2 * PI;
+	// else if ( tmp > PI - (PITCH_UP_BOUND + imu_list[0] -> info . pitch_zero_point) / 8192 * 2 * PI )
+	// 	tmp = PI - (PITCH_UP_BOUND + imu_list[0] -> info . pitch_zero_point) / 8192 * 2 * PI;
+	//有待优化，上限角度限死
 	tmp = motor_list[MOTOR_PITCH] -> target - st -> v_pitch;
-	if ( tmp < PI - (PITCH_LW_BOUND - imu_list[0] -> info . pitch_zero_point) / 8192 * 2 * PI )
-		tmp = PI - (PITCH_LW_BOUND - imu_list[0] -> info . pitch_zero_point) / 8192 * 2 * PI;
-	else if ( tmp > PI - (PITCH_UP_BOUND + imu_list[0] -> info . pitch_zero_point) / 8192 * 2 * PI )
-		tmp = PI - (PITCH_UP_BOUND + imu_list[0] -> info . pitch_zero_point) / 8192 * 2 * PI;
-	
+	//pitch限制范围，绝对位置---待改
+	if(tmp > PITCH_LH_BOUND)
+		tmp = PITCH_LH_BOUND;
+	else if(tmp < PITCH_LL_BOUND)
+		tmp = PITCH_LL_BOUND;
 	MotorSetTar (motor_list[MOTOR_PITCH], tmp, ABS);
 }
 
@@ -37,7 +50,7 @@ void ShooterCtrl (Gimbal_CmdTypedef *st)
 {
 	static uint8_t shooter_pause = 0;
 	if ( st -> friction_state )
-	{
+	{//固定射速，待添加遥控器遥杆控制
 		MotorSetTar (motor_list[MOTOR_SHT_L], BULLET_V, ABS);
 		MotorSetTar (motor_list[MOTOR_SHT_R], - BULLET_V, ABS);
 	}
@@ -52,7 +65,7 @@ void ShooterCtrl (Gimbal_CmdTypedef *st)
 	else if ( st -> shooter == FULL )
 		MotorSetTar (
 				motor_list[MOTOR_AMMO], (36 * SHOOT_FREQ * (float) (GIMBAL_TASK_PERIOD) / 1000) * (2 * PI / 8), INCR
-		            );
+		            );//累加
 //        MotorSetTar(motor_list[MOTOR_AMMO], 36*(2*PI/8), INCR);
 	else if ( st -> shooter == TEST )
 	{
@@ -60,25 +73,26 @@ void ShooterCtrl (Gimbal_CmdTypedef *st)
 		{
 			if ( shooter_pause ++ > 50 )
 			{
-#ifdef AMMO_DIR_INV
+				#ifdef AMMO_DIR_INV
 				MotorSetTar (motor_list[MOTOR_AMMO], - 36 * (2 * PI / 8), INCR);
-#elif
+				#elif
 				MotorSetTar(motor_list[MOTOR_AMMO], (36*SHOOT_FREQ*(float)(GIMBAL_TASK_PERIOD)/1000)*(2*PI/8), INCR);
-#endif
+				#endif
 				shooter_pause = 0;
 			}
 			
 		}
 		else if ( RC_Ctl . rc . wheel < - 200 )
 		{
-#ifdef AMMO_DIR_INV
+			#ifdef AMMO_DIR_INV
 			MotorSetTar (
 					motor_list[MOTOR_AMMO],
 					- (36 * SHOOT_FREQ * (float) (GIMBAL_TASK_PERIOD) / 1000) * (2 * PI / 8), INCR
 			            );
-#elif
+			#elif
 			MotorSetTar(motor_list[MOTOR_AMMO], (36*SHOOT_FREQ*(float)(GIMBAL_TASK_PERIOD)/1000)*(2*PI/8), INCR);
-#endif
+			#endif
+		
 		}
 		else
 		{
