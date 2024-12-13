@@ -46,7 +46,7 @@ typedef struct imu_s
 	int16_t accel[3];//加速度计
 	float angle_q[4];
 	float angle[3];       //互补滤波结果
-    float (*pitch)(struct imu_s *imu);
+    float (*pitch)(struct imu_s *imu); //在IMUInit中有定义，在IMU.c中有函数定义
     float (*yaw)(struct imu_s *imu);
     float (*roll)(struct imu_s *imu);
     void (*update)(struct imu_s *imu);

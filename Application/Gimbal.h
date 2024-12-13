@@ -8,15 +8,15 @@
 typedef enum
 {
 	STOP = 0,
-	AUTO = 1,//火控
-	FULL = 2,//泼水
+	AUTO = 2,//火控
+	FULL = 1,//泼水
 	TEST = 3,//测试 小拨盘上下发弹
 } shooter_strategy_e;//开火策略
 
 typedef enum
 {
-	SHOOTER_NORMAL = 0,
-	SHOOTER_REVERSE = 1
+	SHOOTER_NORMAL = 0,  //正转
+	SHOOTER_REVERSE = 1  //反转
 } shooter_state_e;
 
 typedef struct
@@ -26,7 +26,7 @@ typedef struct
 	uint8_t friction_state;//摩擦轮状态:0-关闭，1-开启
 	float pitch;
 	float yaw;
-	float v_yaw;
+	float v_yaw;          //YAW_角速度
 	float v_pitch;
 }__attribute__((__packed__)) Gimbal_CmdTypedef;
 

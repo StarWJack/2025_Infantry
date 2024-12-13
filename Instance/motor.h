@@ -52,12 +52,13 @@ typedef struct _Motor_TypeDef
     /* switching data source accroding to Motor_InfoTypeDef->type
     NOTE: don't read derectly, use MotorGetVal() instead */
 
-
-    float (*value)(struct _Motor_TypeDef *st);
+    float (*value)(struct _Motor_TypeDef *st);//函数指针，存放一个函数 --- motor.value = get_motor_value; float val = motor.value(&motor); 
     float feed_fwd;        //feedforward when type='IMU'
     float output;
+    float output_Position;
     PID_TypeDef pid[2];    //outer(or angle)(0)、inner(or speed)(1) circle
     Motor_InfoTypeDef info;
+    float voltage;
 }Motor_TypeDef;
 
 typedef struct
@@ -72,7 +73,7 @@ typedef struct
     CAN_HandleTypeDef *hcan;
     Motor_e motor_type;
     float output_max;
-    float *source;      //source of ref in outer pid loop, valid only when pid_type='IMU'
+    float *source;      //source of ref in outer pid loop, valid only when pid_type='IMU'  即读取
 }Motor_InitTypedef;
 extern float data_view[10] ;
 
