@@ -119,6 +119,10 @@ void MahonyAHRSupdate(float q[4], float gx, float gy, float gz, float ax,
 			gx += integralFBx;	// apply integral feedback
 			gy += integralFBy;
 			gz += integralFBz;
+			//zyy
+			// integralFBx *= 0.9;
+			// integralFBy *= 0.9;
+			// integralFBz *= 0.9;
 		} else {
 			integralFBx = 0.0f;	// prevent integral windup
 			integralFBy = 0.0f;
