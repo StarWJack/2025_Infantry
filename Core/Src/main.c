@@ -38,6 +38,7 @@
 #include "sin.h"
 #include "ui.h"
 #include "motor.h"
+#include "SuperCap.h"
 #include "CanInst.h"
 
 /* USER CODE END Includes */
@@ -64,30 +65,30 @@
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config (void);
+void SystemClock_Config(void);
 
-void MX_FREERTOS_Init (void);
+void MX_FREERTOS_Init(void);
 
-static void MX_NVIC_Init (void);
+static void MX_NVIC_Init(void);
 
 /* USER CODE BEGIN PFP */
-void Can_Filter1Config (void);
+void Can_Filter1Config(void);
 
-void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef *htim);
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 
-extern void ControlInit ();
+extern void ControlInit();
 
-extern void CanInit (void);
+extern void CanInit(void);
 
-extern void MotorInit (void);
+extern void MotorInit(void);
 
-extern void GimbalInit (void);
+extern void GimbalInit(void);
 
-extern void CANBusInit (void);
+extern void CANBusInit(void);
 
-extern void ChassisInit (void);
+extern void ChassisInit(void);
 
-extern void UI_taskInit (void);
+extern void UI_taskInit(void);
 
 /* USER CODE END PFP */
 
@@ -97,61 +98,62 @@ extern void UI_taskInit (void);
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
-int main (void)
+ * @brief  The application entry point.
+ * @retval int
+ */
+int main(void)
 {
-	
+
 	/* USER CODE BEGIN 1 */
-	
+
 	/* USER CODE END 1 */
-	
+
 	/* MCU Configuration--------------------------------------------------------*/
-	
+
 	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init ();
-	
+	HAL_Init();
+
 	/* USER CODE BEGIN Init */
-	
+
 	/* USER CODE END Init */
-	
+
 	/* Configure the system clock */
-	SystemClock_Config ();
-	
+	SystemClock_Config();
+
 	/* USER CODE BEGIN SysInit */
-	
+
 	/* USER CODE END SysInit */
-	
+
 	/* Initialize all configured peripherals */
-	MX_GPIO_Init ();
-	MX_DMA_Init ();
-	MX_USART1_UART_Init ();
-	MX_CAN1_Init ();
-	MX_TIM5_Init ();
-	MX_SPI1_Init ();
-	MX_USART3_UART_Init ();
-	MX_I2C3_Init ();
-	MX_USART6_UART_Init ();
-	MX_TIM3_Init ();
-	MX_CAN2_Init ();
-	
+	MX_GPIO_Init();
+	MX_DMA_Init();
+	MX_USART1_UART_Init();
+	MX_CAN1_Init();
+	MX_TIM5_Init();
+	MX_SPI1_Init();
+	MX_USART3_UART_Init();
+	MX_I2C3_Init();
+	MX_USART6_UART_Init();
+	MX_TIM3_Init();
+	MX_CAN2_Init();
+
 	/* Initialize interrupts */
-	MX_NVIC_Init ();
+	MX_NVIC_Init();
 	/* USER CODE BEGIN 2 */
-	
+
 	/* 此段只能放在main.c里，否则cna2无法读取回调信息 */
-	HAL_CAN_ActivateNotification (&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
-	HAL_CAN_Start (&hcan1);
-	#ifdef USE_CAN2
-	HAL_CAN_ActivateNotification (&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
-	HAL_CAN_Start (&hcan2);
-	#endif
+	HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
+	HAL_CAN_Start(&hcan1);
+#ifdef USE_CAN2
+	HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
+	HAL_CAN_Start(&hcan2);
+#endif
 
 	/* 模块初始化 */
-	MotorInit();//pid参数等各项初始化
+	MotorInit();	// pid参数等各项初始化
+	SuperCapInit(); // 超级电容初始化
 	CanInit();
-	IMUInit();//imu初始化，读取转换后的pitch和yaw以及roll数据，还有零点设置问题
+	IMUInit(); // imu初始化，读取转换后的pitch和yaw以及roll数据，还有零点设置问题
 	RemoteInit();
 	RefereeInit();
 	/* 任务初始化 */
@@ -159,150 +161,149 @@ int main (void)
 	CANBusInit();
 	GimbalInit();
 	ChassisInit();
-//  UI_taskInit();
-	
+	//  UI_taskInit();
+
 	/* USER CODE END 2 */
-	
+
 	/* Init scheduler */
-	osKernelInitialize ();
-	
+	osKernelInitialize();
+
 	/* Call init function for freertos objects (in cmsis_os2.c) */
-	MX_FREERTOS_Init ();
-	
+	MX_FREERTOS_Init();
+
 	/* Start scheduler */
-	osKernelStart ();
-	
+	osKernelStart();
+
 	/* We should never get here as control is now taken by the scheduler */
-	
+
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		
+
 		/* USER CODE END WHILE */
-		
+
 		/* USER CODE BEGIN 3 */
 	}
 	/* USER CODE END 3 */
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-void SystemClock_Config (void)
+ * @brief System Clock Configuration
+ * @retval None
+ */
+void SystemClock_Config(void)
 {
 	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
 	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-	
+
 	/** Configure the main internal regulator output voltage
-	*/
+	 */
 	__HAL_RCC_PWR_CLK_ENABLE();
 	__HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-	
+
 	/** Initializes the RCC Oscillators according to the specified parameters
-	* in the RCC_OscInitTypeDef structure.
-	*/
-	RCC_OscInitStruct . OscillatorType = RCC_OSCILLATORTYPE_HSE;
-	RCC_OscInitStruct . HSEState = RCC_HSE_ON;
-	RCC_OscInitStruct . PLL . PLLState = RCC_PLL_ON;
-	RCC_OscInitStruct . PLL . PLLSource = RCC_PLLSOURCE_HSE;
-	RCC_OscInitStruct . PLL . PLLM = 6;
-	RCC_OscInitStruct . PLL . PLLN = 168;
-	RCC_OscInitStruct . PLL . PLLP = RCC_PLLP_DIV2;
-	RCC_OscInitStruct . PLL . PLLQ = 7;
-	if (HAL_RCC_OscConfig (&RCC_OscInitStruct) != HAL_OK)
+	 * in the RCC_OscInitTypeDef structure.
+	 */
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+	RCC_OscInitStruct.PLL.PLLM = 6;
+	RCC_OscInitStruct.PLL.PLLN = 168;
+	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+	RCC_OscInitStruct.PLL.PLLQ = 7;
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
 	{
-		Error_Handler ();
+		Error_Handler();
 	}
-	
+
 	/** Initializes the CPU, AHB and APB buses clocks
-	*/
-	RCC_ClkInitStruct . ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-	                                | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-	RCC_ClkInitStruct . SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-	RCC_ClkInitStruct . AHBCLKDivider = RCC_SYSCLK_DIV1;
-	RCC_ClkInitStruct . APB1CLKDivider = RCC_HCLK_DIV4;
-	RCC_ClkInitStruct . APB2CLKDivider = RCC_HCLK_DIV2;
-	
-	if (HAL_RCC_ClockConfig (&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+	 */
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
 	{
-		Error_Handler ();
+		Error_Handler();
 	}
 }
 
 /**
-  * @brief NVIC Configuration.
-  * @retval None
-  */
-static void MX_NVIC_Init (void)
+ * @brief NVIC Configuration.
+ * @retval None
+ */
+static void MX_NVIC_Init(void)
 {
 	/* USART3_IRQn interrupt configuration */
-	HAL_NVIC_SetPriority (USART3_IRQn, 6, 0);
-	HAL_NVIC_EnableIRQ (USART3_IRQn);
+	HAL_NVIC_SetPriority(USART3_IRQn, 6, 0);
+	HAL_NVIC_EnableIRQ(USART3_IRQn);
 }
 
 /* USER CODE BEGIN 4 */
 
-void PWM_INIT ()
+void PWM_INIT()
 {
-	HAL_TIM_Base_Start (&htim3);
-	HAL_TIM_PWM_Start (&htim3, TIM_CHANNEL_3);
+	HAL_TIM_Base_Start(&htim3);
+	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
 }
 /* USER CODE END 4 */
 
 /**
-  * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM6 interrupt took place, inside
-  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
-  * a global variable "uwTick" used as application time base.
-  * @param  htim : TIM handle
-  * @retval None
-  */
-void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef *htim)
+ * @brief  Period elapsed callback in non blocking mode
+ * @note   This function is called  when TIM6 interrupt took place, inside
+ * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+ * a global variable "uwTick" used as application time base.
+ * @param  htim : TIM handle
+ * @retval None
+ */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	/* USER CODE BEGIN Callback 0 */
-	if (htim -> Instance == TIM5)
+	if (htim->Instance == TIM5)
 	{
 	}
 	/* USER CODE END Callback 0 */
-	if (htim -> Instance == TIM6)
+	if (htim->Instance == TIM6)
 	{
-		HAL_IncTick ();
+		HAL_IncTick();
 	}
 	/* USER CODE BEGIN Callback 1 */
-	
+
 	/* USER CODE END Callback 1 */
 }
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler (void)
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
+void Error_Handler(void)
 {
 	/* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
-	__disable_irq ();
+	__disable_irq();
 	while (1)
 	{
 	}
 	/* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
-  /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-	 ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
+	/* USER CODE BEGIN 6 */
+	/* User can add his own implementation to report the file name and line number,
+	   ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+	/* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
