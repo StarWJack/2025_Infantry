@@ -9,6 +9,7 @@
 #include "imu.h"
 #include "vofa.h"
 #include "Gimbal.h"
+#include "SuperCap.h"
 
 osThreadId_t canbus_task_handel;
 RobotState_e robo_state;

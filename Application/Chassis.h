@@ -9,13 +9,6 @@
 #define SQRT_2 1.4142135f
 #endif
 
-#if HERO
-//底盘功率限制
-#define Power_limit 80.0f
-//驱动电机（driving motor） 驱动底盘移动。目前型号为 M3508，反馈转子转速单位为 rpm
-#define Speed_rpm_Limit 450.0f
-#endif
-
 typedef enum
 {
     SPIN    = 1, //小陀螺
