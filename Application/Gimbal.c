@@ -9,6 +9,12 @@
 #include "remote.h"
 #include "imu.h"
 
+//#include "Serial.h"
+//#include "SolveTrajectory.h"
+
+uint8_t shoot_freq=0;
+uint8_t shoot_v=0;
+
 osThreadId_t gimbal_task_handel;
 Gimbal_CmdTypedef gimbal_cmd;
 
@@ -45,14 +51,15 @@ void GimbalCtrl (Gimbal_CmdTypedef *st)
 	MotorSetTar (motor_list[MOTOR_PITCH], tmp, ABS);
 }
 
-//TODO :处理拨弹轮正反转
+
 void ShooterCtrl (Gimbal_CmdTypedef *st)
 {
 	static uint8_t shooter_pause = 0;
+
 	if ( st -> friction_state )
-	{//固定射速，待添加遥控器遥杆控制
-		MotorSetTar (motor_list[MOTOR_SHT_L], BULLET_V, ABS);
-		MotorSetTar (motor_list[MOTOR_SHT_R], - BULLET_V, ABS);
+	{//固定射速，待添加遥控器遥杆控制   
+		MotorSetTar (motor_list[MOTOR_SHT_L], shoot_v, ABS);
+		MotorSetTar (motor_list[MOTOR_SHT_R], - shoot_v, ABS);
 	}
 	else
 	{
@@ -61,44 +68,50 @@ void ShooterCtrl (Gimbal_CmdTypedef *st)
 	}
 	
 	if ( st -> shooter == STOP )
-		MotorSetTar (motor_list[MOTOR_AMMO], MotorGetVal (motor_list[MOTOR_AMMO], MOTORANGLE, RAD), ABS);
+	{
+		gimbal_cmd . shooter_state = SHOOTER_STOP;
+//		MotorSetTar (motor_list[MOTOR_AMMO], MotorGetVal (motor_list[MOTOR_AMMO], MOTORANGLE, RAD), ABS);
+	}
+
 	else if ( st -> shooter == FULL )
+		gimbal_cmd . shooter_state = SHOOTER_NORMAL;
 		MotorSetTar (
-				motor_list[MOTOR_AMMO], (36 * SHOOT_FREQ * (float) (GIMBAL_TASK_PERIOD) / 1000) * (2 * PI / 8), INCR
+				motor_list[MOTOR_AMMO], (36 * shoot_freq * (float) (GIMBAL_TASK_PERIOD) / 1000) * (2 * PI / 8), INCR
 		            );//累加
 //        MotorSetTar(motor_list[MOTOR_AMMO], 36*(2*PI/8), INCR);
-	else if ( st -> shooter == TEST )
-	{
-		if ( RC_Ctl . rc . wheel > 200 )
-		{
-			if ( shooter_pause ++ > 50 )
-			{
-				#ifdef AMMO_DIR_INV
-				MotorSetTar (motor_list[MOTOR_AMMO], - 36 * (2 * PI / 8), INCR);
-				#elif
-				MotorSetTar(motor_list[MOTOR_AMMO], (36*SHOOT_FREQ*(float)(GIMBAL_TASK_PERIOD)/1000)*(2*PI/8), INCR);
-				#endif
-				shooter_pause = 0;
-			}
-			
-		}
-		else if ( RC_Ctl . rc . wheel < - 200 )
-		{
-			#ifdef AMMO_DIR_INV
-			MotorSetTar (
-					motor_list[MOTOR_AMMO],
-					- (36 * SHOOT_FREQ * (float) (GIMBAL_TASK_PERIOD) / 1000) * (2 * PI / 8), INCR
-			            );
-			#elif
-			MotorSetTar(motor_list[MOTOR_AMMO], (36*SHOOT_FREQ*(float)(GIMBAL_TASK_PERIOD)/1000)*(2*PI/8), INCR);
-			#endif
-		
-		}
-		else
-		{
-			MotorSetTar (motor_list[MOTOR_AMMO], 0, INCR);
-		}
-	}
+
+//测试
+//	else if ( st -> shooter == TEST )
+//	{
+//		if ( RC_Ctl . rc . wheel > 200 )
+//		{
+//			if ( shooter_pause ++ > 50 )
+//			{
+//				#ifdef AMMO_DIR_INV
+//				MotorSetTar (motor_list[MOTOR_AMMO], - 36 * (2 * PI / 8), INCR);
+//				#elif
+//				MotorSetTar(motor_list[MOTOR_AMMO], (36*SHOOT_FREQ*(float)(GIMBAL_TASK_PERIOD)/1000)*(2*PI/8), INCR);
+//				#endif
+//				shooter_pause = 0;
+//			}
+//		}
+//		else if ( RC_Ctl . rc . wheel < - 200 )
+//		{
+//			#ifdef AMMO_DIR_INV
+//			MotorSetTar (
+//					motor_list[MOTOR_AMMO],
+//					- (36 * SHOOT_FREQ * (float) (GIMBAL_TASK_PERIOD) / 1000) * (2 * PI / 8), INCR
+//			            );
+//			#elif
+//			MotorSetTar(motor_list[MOTOR_AMMO], (36*SHOOT_FREQ*(float)(GIMBAL_TASK_PERIOD)/1000)*(2*PI/8), INCR);
+//			#endif
+//		}
+//		else
+//		{
+//			MotorSetTar (motor_list[MOTOR_AMMO], 0, INCR);
+//		}
+//	}
+
 //        MotorSetTar(motor_list[MOTOR_AMMO], 36*(2*PI/8), INCR);
 //    else if(st->shooter == AUTO)
 //    {}//TODO:火控

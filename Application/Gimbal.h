@@ -13,11 +13,14 @@ typedef enum
 	TEST = 3,//测试 小拨盘上下发弹
 } shooter_strategy_e;//开火策略
 
+
 typedef enum
 {
+	SHOOTER_STOP = 2,
 	SHOOTER_NORMAL = 0,  //正转
 	SHOOTER_REVERSE = 1  //反转
 } shooter_state_e;
+
 
 typedef struct
 {
