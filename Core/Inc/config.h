@@ -119,23 +119,6 @@
 #define AMMO_DIR_INV			  // 拨弹盘为顺时针旋转
 #endif
 
-<<<<<<< HEAD
-
-//性能
-// #define SHOOT_FREQ 15    //射频, hz
-#define SHOOT_FREQ 25    //射频, hz
-
-#define BULLET_V 20     //弹速, m/s    10
-//#define BULLET_V 10     //弹速, m/s
-#define MOTORSPEED_DIFF 2.0f //弹速差异，m/s
-#define CALIBRATE 1     //弹速校准比率
-#define CHS_SPEED_LMT   2.0f
-#define CHS_SPIN_LMT    0.5*PI //底盘自旋速度
-
-//比赛数据
-#define DETECT_COLOR 0//0-red 1-blue
-#define TASK_MODE 1 //0-auto 1-aim 2-buff
-=======
 // 性能
 //  #define SHOOT_FREQ 15    //射频, hz
 #define SHOOT_FREQ 20 // 射频, hz
@@ -149,7 +132,6 @@
 // 比赛数据
 #define DETECT_COLOR 0 // 0-red 1-blue
 #define TASK_MODE 0	   // 0-auto 1-aim 2-buff
->>>>>>> 2a1b5849e0a70f4b9aabfac428aec0a4af01c490
 
 // other
 // #define ABS 0
