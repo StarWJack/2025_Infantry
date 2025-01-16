@@ -145,7 +145,7 @@ void ChassisTask (void *arguement)
 	 		pid_inner . Ki = 1,
 	 		pid_inner . Kd = 0,
 	 		.Kf = 0,
-	 		.Output_Max = 0.5,//量程：RPS
+	 		.Output_Max = 0.8,//量程：RPS
 	 		.Err_sum_Max = 10
 	 };
 	
@@ -170,8 +170,8 @@ void ChassisTask (void *arguement)
 					chassis.target -= 8192.0f;
 			while(chassis.target - chassis.value < -4096)
 					chassis.target += 8192.0f;
-			//双环控制+500死区
-			if( (chassis.target - chassis.value) < 500 && (chassis.target - chassis.value) > -500)
+			//双环控制+300死区
+			if( (chassis.target - chassis.value) < 300 && (chassis.target - chassis.value) > -300)
 			{
 				chassis.output = 0;
 			}

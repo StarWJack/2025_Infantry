@@ -17,7 +17,7 @@
 uint8_t referee_rx_len;    //裁判系统串口idle中断接收数据长度
 uint8_t referee_pic_rx_len;
 uint8_t referee_rx_buf[REFEREE_RXBUFF_SIZE];           //dma接收区
-uint8_t referee_pic_rx_buf[REFEREE_PICBUFF_SIZE];
+uint8_t referee_pic_rx_buf[REFEREE_PICBUFF_SIZE];		//图传数据
 uint8_t referee_tx_buf[REFEREE_TXBUFF_SIZE];                        //maximum 128 bytes
 Referee_InfoTypedef refree_info;             //裁判系统数据
 uint8_t UI_Seq = 0;
@@ -28,7 +28,7 @@ void RefereeInit()
 //	HAL_DMA_RegisterCallback(&hdma_usart6_rx, HAL_DMA_XFER_CPLT_CB_ID, RefereeSolve);
 //	HAL_DMA_RegisterCallback(&hdma_usart1_rx, HAL_DMA_XFER_CPLT_CB_ID, RefereeSolve);
 	HAL_UARTEx_ReceiveToIdle_DMA(&huart6, referee_rx_buf, REFEREE_RXBUFF_SIZE);
-	HAL_UARTEx_ReceiveToIdle_DMA(&huart1, referee_pic_rx_buf, REFEREE_PICBUFF_SIZE);
+	HAL_UARTEx_ReceiveToIdle_DMA(&huart1, referee_pic_rx_buf, REFEREE_PICBUFF_SIZE); 
 
 }
 
@@ -53,7 +53,7 @@ void RefereeSolve(uint8_t *data)
 		break;
 	case ID_game_result:
 		memcpy(&(refree_info.Game_Result), (data + Offset_data), LEN_game_result);
-		break;
+		break; 
 	case ID_game_robot_hp:
 		memcpy(&(refree_info.Game_Robot_HP), (data + Offset_data), LEN_game_robot_hp); //v1.4中有冲突，按sof中为准
 		break;

@@ -53,10 +53,11 @@
 //适配zy版本
 typedef struct
 {
-  uint8_t header;//0xA5
+  uint8_t header;//0xA5     
   uint8_t state : 2;       // 0-untracking 1-tracking-aim 2-tracking-buff
   uint8_t id : 3;          // aim: 0-outpost 6-guard 7-base
   uint8_t armors_num : 3;  // 2-balance 3-outpost 4-normal
+  //state + id + armors_num = 8 bits(1 byte)
   float x;                 // aim: robot-center || buff: rune-center
   float y;                 // aim: robot-center || buff: rune-center
   float z;                 // aim: robot-center || buff: rune-center
@@ -76,22 +77,22 @@ typedef struct
 
 typedef struct
 {
-  uint8_t header ;//0x5A
-  uint8_t detect_color : 1;  // 0-red 1-blue
-  uint8_t task_mode : 2;     // 0-auto 1-aim 2-buff
-  uint8_t reset_tracker : 1;
-  uint8_t is_play : 1;
-  uint8_t change_target : 1;
-  uint8_t reserved : 2;
-  float *roll;
-  float *pitch;
-  float *yaw;
-  float aim_x;
-  float aim_y;
-  float aim_z;
-  uint16_t game_time;  // (s) game time [0, 450]
-  uint32_t timestamp;  // (ms) board time
-  uint16_t checksum ;
+	uint8_t header ;//0x5A
+     uint8_t detect_color : 1;  // 0-red 1-blue
+	  uint8_t task_mode : 2;     // 0-auto 1-aim 2-buff
+	  uint8_t reset_tracker : 1;
+	  uint8_t is_play : 1;
+	  uint8_t change_target : 1;
+	  uint8_t reserved : 2;
+	  float *roll;
+	  float *pitch;
+	  float *yaw;
+	  float aim_x;
+	  float aim_y;
+	  float aim_z;
+	  uint16_t game_time;  // (s) game time [0, 450]
+	  uint32_t timestamp;  // (ms) board time
+	  uint16_t checksum ;
 } __attribute__((packed)) send_packet_t;
 
 
@@ -103,7 +104,13 @@ extern uint8_t buf_receive_from_nuc[sizeof(receive_packet_t)];//具体应用在u
 int CDC_SendFeed(uint8_t* Fed, uint16_t Len);//CDC发送反馈数据的函数
 //ROS2发送代码
 void Pack_And_Send_Data_ROS2(send_packet_t *sendinfo);
-void UnPack_Data_ROS2(uint8_t *receive_Array,receive_packet_t *receive_info,uint16_t Len);
+void UnPack_Data_ROS2(uint8_t *receive_Array, receive_packet_t *receive_info, uint16_t Len);
 uint16_t Get_CRC16_Check_Sum(uint8_t* pchMessage,uint32_t dwLength, uint16_t wCRC);
+
+int CDC_Receive_ROS2(uint8_t *receive_buf, receive_packet_t *receive_packet, uint32_t Len);
+
+extern receive_packet_t   aim_packet_from_nuc;
+extern send_packet_t      aim_packet_to_nuc;
+extern uint8_t buf_receive_from_nuc[sizeof(receive_packet_t)];
 
 #endif

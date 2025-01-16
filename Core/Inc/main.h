@@ -61,14 +61,19 @@ void Error_Handler(void);
 #define IST8310_Reset_GPIO_Port GPIOG
 #define IS8310_Ready_Pin GPIO_PIN_3
 #define IS8310_Ready_GPIO_Port GPIOG
-#define LED_G_Pin GPIO_PIN_11
-#define LED_G_GPIO_Port GPIOH
 #define CS1_Accel_Pin GPIO_PIN_4
 #define CS1_Accel_GPIO_Port GPIOA
 #define Ammo_Counter_Pin GPIO_PIN_12
 #define Ammo_Counter_GPIO_Port GPIOB
 #define CS1_Gyro_Pin GPIO_PIN_0
 #define CS1_Gyro_GPIO_Port GPIOB
+#define LED_B_Pin GPIO_PIN_10
+#define LED_B_GPIO_Port GPIOH
+#define LED_G_Pin GPIO_PIN_11
+#define LED_G_GPIO_Port GPIOH
+#define LED_R_Pin GPIO_PIN_12
+#define LED_R_GPIO_Port GPIOH
+
 
 /* USER CODE BEGIN Private defines */
 #define CCMRAM __attribute__((section(".ccmram"))) // CCM宏定�?
