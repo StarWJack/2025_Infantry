@@ -150,19 +150,21 @@ void my_MotorCalc (void)
 //IMU控制
 	tar = motor_list[MOTOR_YAW] -> target;
 	
-	ref = MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN);
+	ref = MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN);//读IMU时已经做过处理，无需get-rad
+
 	while(tar-ref > PI)
 	 	ref += 2 * PI ;
 	while(tar-ref < -PI)
-	 	tar += 2 * PI ;
+	 	ref -= 2 * PI ;
 
 	motor_list[MOTOR_YAW] -> output_Position = PID_Position (&(motor_list[MOTOR_YAW] -> pid[ANGLE]), ref, tar);
 	motor_list[MOTOR_YAW] -> output = motor_list[MOTOR_YAW] -> output_Position;
 
-	tar = motor_list[MOTOR_YAW] -> output_Position;
+	tar = motor_list[MOTOR_YAW] -> output_Position + (2* PI * motor_list[MOTOR_YAW] -> feed_fwd);//底盘跟随时的角速度（类似前馈） rad/s
 
 	ref = MotorGetVal (motor_list[MOTOR_YAW], MOTORSPEED, RAD);
-	FeedForward_Input(&(motor_list[MOTOR_YAW] -> pid[SPEED]) , tar);
+
+	FeedForward_Input(&(motor_list[MOTOR_YAW] -> pid[SPEED]) , tar);//前馈
 
 	motor_list[MOTOR_YAW] -> output = PID_Increment (&(motor_list[MOTOR_YAW] -> pid[SPEED]), ref, tar) ;
 	motor_list[MOTOR_YAW] -> output += motor_list[MOTOR_YAW] -> pid[SPEED].Output_feed;
@@ -203,33 +205,40 @@ void my_MotorCalc (void)
 	//#define MOTOR_AMMO 6
 	static float ref_last = 0, *tar_tmp;
 	*tar_tmp = motor_list[MOTOR_AMMO] -> target;
-	ref = MotorGetVal (motor_list[MOTOR_AMMO], MOTORANGLE, RAD);
-	
-	if ( gimbal_cmd . shooter_state == SHOOTER_NORMAL )
+	ref = MotorGetVal (motor_list[MOTOR_AMMO], MOTORANGLE, RAD);//角度信息
+	//
+	if ( gimbal_cmd . shooter_state == SHOOTER_STOP )
 	{
-		#ifdef AMMO_DIR_INV
-		if ( ref > ref_last + 0.005f )
-			*tar_tmp -= 2 * PI;
-		#elif
-		if ( ref < ref_last + 0.005f )
-			*tar_tmp += 2*PI;
-		#endif
+		tar = ref;
 	}
-	else if ( gimbal_cmd . shooter_state == SHOOTER_REVERSE )
+	else
 	{
-		#ifdef AMMO_DIR_INV
-		if ( ref < ref_last + 0.005f )
-			*tar_tmp += 2 * PI;
-		if ( *tar_tmp > 0 )
-			gimbal_cmd . shooter_state == SHOOTER_NORMAL;
-		#elif
-		if ( ref > ref_last + 0.005f )
-			*tar_tmp -= 2*PI;
-		if (*tar_tmp < 0)
-			gimbal_cmd . shooter_state == SHOOTER_NORMAL;
-		#endif
+		if ( gimbal_cmd . shooter_state == SHOOTER_NORMAL )
+		{
+			#ifdef AMMO_DIR_INV
+			if ( ref > ref_last + 0.005f )
+				*tar_tmp -= 2 * PI;
+			#elif
+			if ( ref < ref_last + 0.005f )
+				*tar_tmp += 2*PI;
+			#endif
+		}
+		else if ( gimbal_cmd . shooter_state == SHOOTER_REVERSE )
+		{
+			#ifdef AMMO_DIR_INV
+			if ( ref < ref_last + 0.005f )
+				*tar_tmp += 2 * PI;
+			if ( *tar_tmp > 0 )
+				gimbal_cmd . shooter_state == SHOOTER_NORMAL;
+			#elif
+			if ( ref > ref_last + 0.005f )
+				*tar_tmp -= 2*PI;
+			if (*tar_tmp < 0)
+				gimbal_cmd . shooter_state == SHOOTER_NORMAL;
+			#endif
+		}
+		tar = *tar_tmp;
 	}
-	tar = *tar_tmp;
 	motor_list[MOTOR_AMMO] -> output = PID_Position (&motor_list[MOTOR_AMMO] -> pid[ANGLE], ref, tar);
 	
 	tar = motor_list[MOTOR_AMMO] -> output;
@@ -249,7 +258,6 @@ void my_MotorCalc (void)
 				&(motor_list[i] -> pid[SPEED]), MotorGetVal (motor_list[i], MOTORSPEED, RAD), tar
 		                                        );
 	}
-	
 }
 
 /*
@@ -312,7 +320,13 @@ void MotorCanCbk (Can_InfoTypedef *st, uint8_t *rxdata, uint8_t list_id)
 	motor_list[list_id] -> data . temp = rxdata[6];
 }
 
-
+/*
+ * @brief  	电机发送报文
+ * @param	can信息结构体
+ * @param	发送的16位数据指针
+ * @param   4个ID(参考电机手册发送格式)
+ * @retval 	无
+ */
 void MotorFillMsg (Can_InfoTypedef *st, uint8_t *txdata, uint8_t list_id)
 {
 	uint8_t tmp_id = st -> CAN_id > 4 ? (st -> CAN_id) - 4 : st -> CAN_id;
@@ -415,6 +429,7 @@ void MotorRegist (Motor_InitTypedef st)
 //    if(st.pid_type == DUAL_LOOP)
     //定义了一个函数指针value，存放一个函数
 	motor . value = st . source;    //avoid null pointer
+	
 	motor_list[st . list_id] = malloc (sizeof (Motor_TypeDef));
 	memcpy (motor_list[st . list_id], &motor, sizeof (Motor_TypeDef));
 }
@@ -485,7 +500,7 @@ void MotorInit ()
 	pid_inner . Kd = 0;
 	pid_inner . Kf = 0;
 	pid_inner . Err_sum_Max = 1000;
-	pid_inner . Output_Max = 5000;
+	pid_inner . Output_Max = 10000;
 	init . pid_inner = pid_inner;
 	init . can_id = 1;
 	init . hcan = &hcan1;
@@ -513,12 +528,12 @@ void MotorInit ()
 	MotorRegist (init);
 	
 	//shooter init
-	pid_inner . Kp = 10;
-	pid_inner . Ki = 0;
+	pid_inner . Kp = 400;
+	pid_inner . Ki = 2;
 	pid_inner . Kd = 0;
 	pid_inner . Kf = 0;
-	// pid_inner . Output_Max = 5000;
-	pid_inner . Output_Max = 0;
+	 pid_inner . Output_Max = 10000;
+//	pid_inner . Output_Max = 0;
 	init . pid_inner = pid_inner;
 	init . hcan = &hcan2;
 	init . can_id = 1;
@@ -533,18 +548,18 @@ void MotorInit ()
 	MotorRegist (init);
 	
 	//ammofeeder init
-	pid_outer . Kp = 8;
+	pid_outer . Kp = 500;
 	pid_outer . Ki = 0;
 	pid_outer . Kd = 0;
 	pid_outer . Kf = 0;
 	pid_outer . Output_Max = 15000;
 	pid_outer . Err_sum_Max = 1000;
-	pid_inner . Kp = 100;
-	pid_inner . Ki = 1;
+	pid_inner . Kp = 200;
+	pid_inner . Ki = 25;
 	pid_inner . Kd = 0;
 	pid_inner . Kf = 0;
-	// pid_inner . Output_Max = 8000;
-	pid_inner . Output_Max = 0;
+	 pid_inner . Output_Max = 10000;
+//	pid_inner . Output_Max = 0;
 	init . pid_inner = pid_inner;
 	init . pid_outer = pid_outer;
 	init . can_id = 7;
