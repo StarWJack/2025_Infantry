@@ -3,7 +3,7 @@
 
 #include "main.h"
 #include "config.h"
-//TODO:后续新增对IIC协议的支持
+// TODO:后续新增对IIC协议的支持
 typedef struct
 {
     SPI_HandleTypeDef *hspi_x;
@@ -11,46 +11,46 @@ typedef struct
     uint16_t pin_accel;
     GPIO_TypeDef *port_gyro;
     uint16_t pin_gyro;
-}SPI_InfoTypeDef;
+} SPI_InfoTypeDef;
 
 typedef enum
 {
     SPI,
     I2C,
     UART
-}Protocol_enum;
+} Protocol_enum;
 
-//NOTE: 考虑削减此项
+// NOTE: 考虑削减此项
 typedef enum
 {
     BMI088,
     MPU6050
-}IMU_enum;
+} IMU_enum;
 
 typedef struct
 {
     IMU_enum imu_type;
     Protocol_enum p_type;
-    float pitch_zero_point;//云台pitch轴零点
+    float pitch_zero_point; // 云台pitch轴零点
     float bias_g1;
     float bias_g2;
     float bias_a1;
     uint8_t enable;
-}IMU_InfoTypeDef;
+} IMU_InfoTypeDef;
 
 typedef struct imu_s
 {
     SPI_InfoTypeDef spi;
     IMU_InfoTypeDef info;
-    int16_t gyro[3];//陀螺仪原始数据
-	int16_t accel[3];//加速度计
-	float angle_q[4];
-	float angle[3];       //互补滤波结果
-    float (*pitch)(struct imu_s *imu); //在IMUInit中有定义，在IMU.c中有函数定义
+    int16_t gyro[3];  // 陀螺仪原始数据
+    int16_t accel[3]; // 加速度计
+    float angle_q[4];
+    float angle[3];                    // 互补滤波结果
+    float (*pitch)(struct imu_s *imu); // 在IMUInit中有定义，在IMU.c中有函数定义
     float (*yaw)(struct imu_s *imu);
     float (*roll)(struct imu_s *imu);
     void (*update)(struct imu_s *imu);
-}IMU_TypeDef;
+} IMU_TypeDef;
 
 typedef struct
 {
@@ -58,24 +58,23 @@ typedef struct
     GPIO_TypeDef *port;
     uint16_t pin;
     int16_t mag[3];
-}Mag_Typedef;
+} Mag_Typedef;
 
 typedef enum
 {
-	accel = 0,
-	gyro = 1
-}accel_or_gyro;
+    accel = 0,
+    gyro = 1
+} accel_or_gyro;
 
-//#define Get_Bias
+// #define Get_Bias
 
 #ifdef Get_Bias
-extern float  bias[3] ;
-extern uint32_t sum ;
+extern float bias[3];
+extern uint32_t sum;
 #endif
 
 extern IMU_TypeDef *imu_list[IMU_NUM];
 extern void BMI088Update(IMU_TypeDef *imu);
 extern void IMUInit();
-
 
 #endif
