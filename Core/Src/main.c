@@ -151,8 +151,8 @@ int main(void)
 
 	/* 模块初始化 */
 	MotorInit();	// pid参数等各项初始化
-	SuperCapInit(); // 超级电容初始化
 	CanInit();
+	SuperCapInit(); // 超级电容初始化
 	IMUInit(); // imu初始化，读取转换后的pitch和yaw以及roll数据，还有零点设置问题
 	RemoteInit();
 	RefereeInit();

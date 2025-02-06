@@ -109,6 +109,8 @@ uint16_t Get_CRC16_Check_Sum(uint8_t* pchMessage,uint32_t dwLength, uint16_t wCR
 
 int CDC_Receive_ROS2(uint8_t *receive_buf, receive_packet_t *receive_packet, uint32_t Len);
 
+void Send_Packet_Init(send_packet_t *send_packet);
+
 extern receive_packet_t   aim_packet_from_nuc;
 extern send_packet_t      aim_packet_to_nuc;
 extern uint8_t buf_receive_from_nuc[sizeof(receive_packet_t)];

@@ -37,5 +37,6 @@ extern supercap_rx_data_t supercap_rx_data;
 extern supercap_tx_data_t supercap_tx_data;
 extern Can_InfoTypedef SuperCap_CanInfo;
 void SuperCapCtrlData_Send(void);
+void SuperCapRegist(SuperCap_InitTypedef st);
 
 #endif // SUPERCAP_H

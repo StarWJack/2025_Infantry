@@ -73,8 +73,8 @@ void SuperCapInit(void)
     SuperCap_InitTypedef init = {
         .can_id = 1,
         .hcan = &hcan1,       // 超级电容挂载在CAN1上
-        .txheader_id = 0x088, // 发送ID
-        .rxheader_id = 0x081, // 接收ID
+        .txheader_id = 0x061, // 发送ID
+        .rxheader_id = 0x097, // 接收ID
     };
     SuperCapRegist(init);
 }
