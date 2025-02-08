@@ -31,6 +31,8 @@ typedef struct
 	float yaw;
 	float v_yaw;          //YAW_角速度
 	float v_pitch;
+	float v_shoot;
+
 }__attribute__((__packed__)) Gimbal_CmdTypedef;
 
 

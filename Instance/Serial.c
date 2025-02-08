@@ -138,15 +138,32 @@ float Serial_GetPitch(send_packet_t *send_packet)
 }
 
 
-void Send_Packet_Init(send_packet_t *send_packet)
-{
-    send_packet->header = 0x5A;
-    send_packet->detect_color = DETECT_COLOR;
-    send_packet->task_mode = TASK_MODE;
-    send_packet->reset_tracker = 0;
-    send_packet->is_play = 1;
-    send_packet->change_target = 0;
-    send_packet-> roll = Serial_GetRoll;
-    send_packet-> pitch = Serial_GetPitch;
-    send_packet-> yaw = Serial_GetYaw;
-}
+ void Send_Packet_Init(send_packet_t *send_packet)
+ {
+     send_packet->header = 0x5A;
+     send_packet->detect_color = DETECT_COLOR;
+     send_packet->task_mode = TASK_MODE;
+     send_packet->reset_tracker = 0;
+     send_packet->is_play = 1;
+     send_packet->change_target = 0;
+     send_packet-> roll = Serial_GetRoll;
+     send_packet-> pitch = Serial_GetPitch;
+     send_packet-> yaw = Serial_GetYaw;
+ }
+
+//void Send_Packet_Init(send_packet_t *send_packet)
+//{
+//
+//    send_packet->header = 0x5A;
+//    send_packet->robot_color = 0;
+//    send_packet->reserve = 0;
+//
+//    send_packet->roll = 0;
+//    send_packet->pitch = 0;
+//    send_packet-> yaw = 0;
+//
+//    send_packet-> aim_x = 0;
+//    send_packet-> aim_y = 0;
+//    send_packet-> aim_z = 0;
+//    send_packet-> checksum = 0;
+//}

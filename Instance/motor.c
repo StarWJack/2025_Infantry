@@ -160,7 +160,7 @@ void my_MotorCalc (void)
 	motor_list[MOTOR_YAW] -> output_Position = PID_Position (&(motor_list[MOTOR_YAW] -> pid[ANGLE]), ref, tar);
 	motor_list[MOTOR_YAW] -> output = motor_list[MOTOR_YAW] -> output_Position;
 
-	tar = motor_list[MOTOR_YAW] -> output_Position + (2* PI * motor_list[MOTOR_YAW] -> feed_fwd);//底盘跟随时的角速度（类似前馈） rad/s
+	tar = motor_list[MOTOR_YAW] -> output_Position + (12 * motor_list[MOTOR_YAW] -> feed_fwd);//底盘跟随时的角速度（类似前馈） rad/s
 
 	ref = MotorGetVal (motor_list[MOTOR_YAW], MOTORSPEED, RAD);
 
@@ -203,50 +203,11 @@ void my_MotorCalc (void)
 	}
 	
 	//#define MOTOR_AMMO 6
-	static float ref_last = 0, *tar_tmp;
-	*tar_tmp = motor_list[MOTOR_AMMO] -> target;
-	ref = MotorGetVal (motor_list[MOTOR_AMMO], MOTORANGLE, RAD);//角度信息
-	//
-	if ( gimbal_cmd . shooter_state == SHOOTER_STOP )
-	{
-		tar = ref;
-	}
-	else
-	{
-		if ( gimbal_cmd . shooter_state == SHOOTER_NORMAL )
-		{
-			#ifdef AMMO_DIR_INV
-			if ( ref > ref_last + 0.005f )
-				*tar_tmp -= 2 * PI;
-			#elif
-			if ( ref < ref_last + 0.005f )
-				*tar_tmp += 2*PI;
-			#endif
-		}
-		else if ( gimbal_cmd . shooter_state == SHOOTER_REVERSE )
-		{
-			#ifdef AMMO_DIR_INV
-			if ( ref < ref_last + 0.005f )
-				*tar_tmp += 2 * PI;
-			if ( *tar_tmp > 0 )
-				gimbal_cmd . shooter_state == SHOOTER_NORMAL;
-			#elif
-			if ( ref > ref_last + 0.005f )
-				*tar_tmp -= 2*PI;
-			if (*tar_tmp < 0)
-				gimbal_cmd . shooter_state == SHOOTER_NORMAL;
-			#endif
-		}
-		tar = *tar_tmp;
-	}
-	motor_list[MOTOR_AMMO] -> output = PID_Position (&motor_list[MOTOR_AMMO] -> pid[ANGLE], ref, tar);
-	
-	tar = motor_list[MOTOR_AMMO] -> output;
-	ref = MotorGetVal (motor_list[MOTOR_AMMO], MOTORSPEED, RAD);
+	tar = motor_list[MOTOR_AMMO] -> target;
+	ref = MotorGetVal (motor_list[MOTOR_AMMO], MOTORSPEED, RAD);//rad/s
 	motor_list[MOTOR_AMMO] -> output = PID_Increment (&motor_list[MOTOR_AMMO] -> pid[SPEED], ref, tar);
 	
-	ref_last = ref;
-	
+
 	//#define MOTOR_SHT_L 7
 	//#define MOTOR_SHT_R 8
 	for ( uint8_t i = MOTOR_SHT_L; i <= MOTOR_SHT_R; i ++ )
@@ -279,7 +240,7 @@ float MotorGetVal (Motor_TypeDef *motor, MOTOR_Feedback_e feedback, DataType_e t
 		if ( type == ORIGIN )
 			val = motor -> data . speed;
 		else
-			val = motor -> data . speed * 2 * PI / 60.0f;//RPM->RPS
+			val = motor -> data . speed * 2 * PI / 60.0f;//RPM->rad/s
 	else
 		val = motor -> value (motor);//调用 motor 结构体中的 value 函数，并将 motor 作为参数传递给该函数，然后将返回值赋给 val 变量
 		                             //如果feedback不是MOTORANGLE或MOTORSPEED，那么就调用motor结构体中的value函数(当前代码在MotorRegist和MotorInit定义)
@@ -485,11 +446,11 @@ void MotorInit ()
 	pid_outer . Output_Max = 10;
 	init . pid_outer = pid_outer;
 	
-	pid_inner . Kp = 1000;//太大过零点噪声极大
+	pid_inner . Kp = 1500;//太大过零点噪声极大
 	pid_inner . Ki = 15;
 	pid_inner . Kd = 0;
 	pid_inner . Kf = 0;
-	pid_inner . Output_Max = 8000;
+	pid_inner . Output_Max = 10000;
 //	pid_inner . Output_Max = 0;//改为0调试
 	init . pid_inner = pid_inner;
 	MotorRegist (init);
@@ -528,11 +489,11 @@ void MotorInit ()
 	MotorRegist (init);
 	
 	//shooter init
-	pid_inner . Kp = 400;
-	pid_inner . Ki = 2;
-	pid_inner . Kd = 0;
+	pid_inner . Kp = 420;
+	pid_inner . Ki = 15;
+	pid_inner . Kd = 50;
 	pid_inner . Kf = 0;
-	 pid_inner . Output_Max = 10000;
+	 pid_inner . Output_Max = 12000;
 //	pid_inner . Output_Max = 0;
 	init . pid_inner = pid_inner;
 	init . hcan = &hcan2;
@@ -548,7 +509,8 @@ void MotorInit ()
 	MotorRegist (init);
 	
 	//ammofeeder init
-	pid_outer . Kp = 500;
+	// pid_outer . Kp = 500;
+	pid_outer . Kp = 0;
 	pid_outer . Ki = 0;
 	pid_outer . Kd = 0;
 	pid_outer . Kf = 0;

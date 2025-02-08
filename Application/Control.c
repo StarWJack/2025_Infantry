@@ -9,7 +9,6 @@
 #include "imu.h"
 #include "math.h"
 #include "WatchDog.h"
-#include "imu.h"
 #include "vofa.h"
 #include "CanBus.h"
 #include "cmsis_os2.h"
@@ -74,6 +73,7 @@ void RemoteCtrl (Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 
 	gim -> v_yaw = (float) - RC_Ctl . rc . ch3 * REMOTE_YAW_SEN;
 	gim -> v_pitch = (float) - RC_Ctl . rc . ch4 * REMOTE_PITCH_SEN;
+	gim -> v_shoot = (float) RC_Ctl . rc .wheel ;
 	
 	chs -> mode = RC_Ctl . rc . sw1;
 	//sw2的控制模式，sw1在chassis
@@ -105,7 +105,7 @@ void ControlTask (void *argument)
 	for ( ;; )
 	{
 		//收
-		//  CDC_Receive_ROS2(buf_receive_from_nuc, &aim_packet_from_nuc, sizeof (aim_packet_from_nuc));
+		UnPack_Data_ROS2(buf_receive_from_nuc, &aim_packet_from_nuc, sizeof (aim_packet_from_nuc));
 
 		RemoteCtrl (&gimbal_cmd, &chassis_cmd);
 #ifdef USE_KEYBOARD
@@ -113,25 +113,13 @@ void ControlTask (void *argument)
 #endif
 		//云台坐标系转底盘坐标系
 		ChassisCmdTrans (&chassis_cmd, CHASSIS_ZEROPOINT, MotorGetVal (motor_list[MOTOR_YAW], MOTORANGLE, ORIGIN));
-		// HAL_UART_Transmit(&huart1,&(motor_list[MOTOR_YAW] -> output), 4, 0xff);
-
-		// vofa_demo3((imu_list[0] -> angle[2]+PI)*1000,
-		// 		   motor_list[MOTOR_PITCH] -> target *1000,
-		// 		   motor_list[MOTOR_PITCH] ->pid[1].Output);
-
 		// vofa_demo3(MotorGetVal(motor_list[AMMO],MOTORSPEED,ORIGIN),
 		// 		   motor_list[MOTOR_AMMO] -> target,
 		// 		   RC_Ctl .rc.wheel);
-		      
-//		 vofa_demo3(buf_receive_from_nuc[0],
-//		 		   buf_receive_from_nuc[5],
-//		 		   buf_receive_from_nuc[sizeof (aim_packet_from_nuc)]);
 		
 		//打包发送
 		Pack_And_Send_Data_ROS2 (&aim_packet_to_nuc);
-		// FeedForward_Input();
 
-		
 		time = osKernelGetTickCount ();
 		osDelayUntil (time + CONTROL_TASK_PERIOD);
 	}

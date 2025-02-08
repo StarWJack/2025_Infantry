@@ -152,32 +152,32 @@ static void F_Output_Limit (PID_TypeDef *hpid)
 }
 
 //积分限幅
-static void F_Integral_Limit (PID_TypeDef *hpid)
-{
-	static float temp_output, temp_iout;
-	temp_iout = hpid -> i_out + hpid -> i_term;
-	temp_output = hpid -> p_out + hpid -> i_out + hpid -> d_out;
-	//输出已经大于输出上下限限幅，清零本次积分
-	if ( abs(temp_output) > hpid -> Output_Max )
-	{
-		if ( hpid -> Err_now * hpid -> i_out > 0 ) // 积分却还在累积
-		{
-			hpid -> i_term = 0; // 当前积分项置零
-		}
-	}
-	//积分输出超过上限，等于最大积分输出
-	if ( temp_iout > hpid -> integral_limit )
-	{
-		hpid -> i_term = 0;
-		hpid -> i_out = hpid -> integral_limit;
-	}
-	//积分输出超过下限，等于最小积分输出
-	if ( temp_iout < - hpid -> integral_limit )
-	{
-		hpid -> i_term = 0;
-		hpid -> i_out = - hpid -> integral_limit;
-	}
-}
+//static void F_Integral_Limit (PID_TypeDef *hpid)
+//{
+//	static float temp_output, temp_iout;
+//	temp_iout = hpid -> i_out + hpid -> i_term;
+//	temp_output = hpid -> p_out + hpid -> i_out + hpid -> d_out;
+//	//输出已经大于输出上下限限幅，清零本次积分
+//	if ( abs(temp_output) > hpid -> Output_Max )
+//	{
+//		if ( hpid -> Err_now * hpid -> i_out > 0 ) // 积分却还在累积
+//		{
+//			hpid -> i_term = 0; // 当前积分项置零
+//		}
+//	}
+//	//积分输出超过上限，等于最大积分输出
+//	if ( temp_iout > hpid -> integral_limit )
+//	{
+//		hpid -> i_term = 0;
+//		hpid -> i_out = hpid -> integral_limit;
+//	}
+//	//积分输出超过下限，等于最小积分输出
+//	if ( temp_iout < - hpid -> integral_limit )
+//	{
+//		hpid -> i_term = 0;
+//		hpid -> i_out = - hpid -> integral_limit;
+//	}
+//}
 
 #if TEST_FEED
 float PID_Calc(PID_TypeDef *hpid)
