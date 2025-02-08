@@ -39,4 +39,6 @@ extern Can_InfoTypedef SuperCap_CanInfo;
 void SuperCapCtrlData_Send(void);
 void SuperCapRegist(SuperCap_InitTypedef st);
 
+void SuperCapInit(void);
+
 #endif // SUPERCAP_H

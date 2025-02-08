@@ -36,7 +36,6 @@
 #include "referee.h"
 #include "remote.h"
 #include "sin.h"
-#include "ui.h"
 #include "motor.h"
 #include "SuperCap.h"
 #include "CanInst.h"
