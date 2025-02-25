@@ -8,50 +8,75 @@
 #include "math.h"
 #include "remote.h"
 #include "imu.h"
-
-//#include "Serial.h"
-//#include "SolveTrajectory.h"
+#include "Serial.h"
 
 osThreadId_t gimbal_task_handel;
 Gimbal_CmdTypedef gimbal_cmd;
+Gimbal_Auto gimbal_auto;
 
+float tar_yaw;
+float tar_pitch;
+uint8_t gimbal_diff;//测量任务时间
+
+void GimbalInit (void)
+{
+	osThreadAttr_t attr_task = {
+			.name = "GimbalTask",
+			.stack_size = 128 * 4,
+			.priority = (osPriority_t) osPriorityAboveNormal1 ,};
+	gimbal_task_handel = osThreadNew (GimbalTask, NULL, &attr_task);
+}
 
 void GimbalCtrl (Gimbal_CmdTypedef *st)
 {
-	//目标值+增量
- 	float tmp = motor_list[MOTOR_YAW] -> target + st -> v_yaw ;
-// （0 < tmp < 2*PI) 过零点限制范围
- 	while ( tmp > 2*PI )
- 		tmp -= 2 * PI;
- 	while ( tmp <0 )
- 		tmp += 2 * PI;
+	//自瞄
+	if(st -> shooter == AUTO && st -> shoot_advice)
+	{
+		tar_yaw = MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN)  + gimbal_auto.yaw_diff ;
 
-// 	while ( tmp > 8192 )
-// 			tmp -= 8192;
-// 	while ( tmp <0 )
-// 			tmp += 8192;
-//	float tmp = st -> v_yaw ;
-	MotorSetTar (motor_list[MOTOR_YAW], tmp, ABS);
-	
-	// tmp = motor_list[MOTOR_PITCH] -> target - st -> v_pitch;
-	// if ( tmp < PI - (PITCH_LW_BOUND - imu_list[0] -> info . pitch_zero_point) / 8192 * 2 * PI )
-	// tmp = PI - (PITCH_LW_BOUND - imu_list[0] -> info . pitch_zero_point) / 8192 * 2 * PI;
-	// else if ( tmp > PI - (PITCH_UP_BOUND + imu_list[0] -> info . pitch_zero_point) / 8192 * 2 * PI )
-	// 	tmp = PI - (PITCH_UP_BOUND + imu_list[0] -> info . pitch_zero_point) / 8192 * 2 * PI;
-	//有待优化，上限角度限死
-	tmp = motor_list[MOTOR_PITCH] -> target - st -> v_pitch;
-	//pitch限制范围，绝对位置---待改
-	if(tmp > PITCH_LH_BOUND)
-		tmp = PITCH_LH_BOUND;
-	else if(tmp < PITCH_LL_BOUND)
-		tmp = PITCH_LL_BOUND;
-	MotorSetTar (motor_list[MOTOR_PITCH], tmp, ABS);
+		while ( tar_yaw > 2*PI )
+			tar_yaw -= 2 * PI;
+		while ( tar_yaw <0 )
+			tar_yaw += 2 * PI;
+		MotorSetTar (motor_list[MOTOR_YAW], tar_yaw, ABS);
+
+		tar_pitch = MotorGetVal (motor_list[MOTOR_PITCH], IMU, RAD) + gimbal_auto.pitch_diff ;
+		if(tar_pitch > PITCH_LH_BOUND)
+			tar_pitch = PITCH_LH_BOUND;
+		else if(tar_pitch < PITCH_LL_BOUND)
+			tar_pitch = PITCH_LL_BOUND;
+		MotorSetTar (motor_list[MOTOR_PITCH], tar_pitch, ABS);
+	}
+	else
+	{	
+		//目标值+增量
+		float tmp = motor_list[MOTOR_YAW] -> target + st -> v_yaw ;
+		// （0 < tmp < 2*PI) 过零点限制范围
+			 while ( tmp > 2*PI )
+				 tmp -= 2 * PI;
+			 while ( tmp <0 )
+				 tmp += 2 * PI;
+		
+		// 	while ( tmp > 8192 )
+		// 			tmp -= 8192;
+		// 	while ( tmp <0 )
+		// 			tmp += 8192;
+		//	float tmp = st -> v_yaw ;
+			MotorSetTar (motor_list[MOTOR_YAW], tmp, ABS);
+		
+			tmp = motor_list[MOTOR_PITCH] -> target - st -> v_pitch;
+			//pitch限制范围，绝对位置---有待优化，上限角度限死
+			if(tmp > PITCH_LH_BOUND)
+				tmp = PITCH_LH_BOUND;
+			else if(tmp < PITCH_LL_BOUND)
+				tmp = PITCH_LL_BOUND;
+			MotorSetTar (motor_list[MOTOR_PITCH], tmp, ABS);
+	}
 }
 
 
 void ShooterCtrl (Gimbal_CmdTypedef *st)
 {
-
 	if ( st -> friction_state )
 	{//固定射速，待添加遥控器遥杆控制   
 		MotorSetTar (motor_list[MOTOR_SHT_L], BULLET_V, ABS);
@@ -59,24 +84,21 @@ void ShooterCtrl (Gimbal_CmdTypedef *st)
 	}
 	else
 	{
-		gimbal_cmd . shooter_state = SHOOTER_STOP;
+		// gimbal_cmd . shooter_state = SHOOTER_STOP;
 		MotorSetTar (motor_list[MOTOR_SHT_L], 0, ABS);
 		MotorSetTar (motor_list[MOTOR_SHT_R], 0, ABS);
 	}
 	//sw2 == 2;
 	if ( st -> shooter == STOP )
 	{
-		gimbal_cmd . shooter_state = SHOOTER_STOP;
+		// gimbal_cmd . shooter_state = SHOOTER_STOP;
 		MotorSetTar (motor_list[MOTOR_AMMO], 0, ABS);
-//		MotorSetTar (motor_list[MOTOR_AMMO], MotorGetVal (motor_list[MOTOR_AMMO], MOTORANGLE, RAD), ABS);
+
+		MotorSetTar (motor_list[MOTOR_SHT_L], 0, ABS);
+		MotorSetTar (motor_list[MOTOR_SHT_R], 0, ABS);
 	}
 
-//	else if ( st -> shooter == FULL )
-//		gimbal_cmd . shooter_state = SHOOTER_NORMAL;
-//		MotorSetTar (
-//				motor_list[MOTOR_AMMO], (36 * shoot_freq * (float) (GIMBAL_TASK_PERIOD) / 1000) * (2 * PI / 8), INCR
-//		            );//累加
-	else if( st -> shooter == TEST )
+	else if( st -> shooter == SHOOT )
 	{
 		float tar = st -> v_shoot * 2 * PI /36; // 实际弹频 = v_shoot/36（拨弹盘一圈）/10(任务周期) *8  k/s
 		if(tar > 0)
@@ -85,34 +107,66 @@ void ShooterCtrl (Gimbal_CmdTypedef *st)
 		}
 		MotorSetTar (motor_list[MOTOR_AMMO], tar, ABS);
 	}
+//自瞄+火控
+	else if ( st -> shooter == AUTO && st -> shoot_advice)
+	{
+		float tar = 770 * 2 * PI /36;  //固定值
+		if(tar > 0)
+		{
+			tar = -tar;
+		}
+		MotorSetTar (motor_list[MOTOR_SHT_L], BULLET_V, ABS);
+		MotorSetTar (motor_list[MOTOR_SHT_R], - BULLET_V, ABS);
+
+		MotorSetTar (motor_list[MOTOR_AMMO], tar, ABS);
+	}
+
 }
+
 
 void GimbalMotorPosi_Init (void)
 {
 	MotorSetTar (motor_list[MOTOR_YAW], MotorGetVal (motor_list[MOTOR_YAW], IMU, RAD), ABS);
 	MotorSetTar (motor_list[MOTOR_PITCH], MotorGetVal (motor_list[MOTOR_PITCH], IMU, RAD), ABS);
-	MotorSetTar (motor_list[MOTOR_AMMO], MotorGetVal (motor_list[MOTOR_AMMO], MOTORANGLE, RAD), ABS);
-}
-
-
-void GimbalInit (void)
-{
-	osThreadAttr_t attr_task = {.name = "GimbalTask"};
-	gimbal_task_handel = osThreadNew (GimbalTask, NULL, &attr_task);
 	
+	MotorSetTar (motor_list[MOTOR_AMMO], 0, ABS);
 }
+
 
 void GimbalTask (void *argument)
 {
 	GimbalMotorPosi_Init ();
 	uint32_t time = osKernelGetTickCount ();
+
 	for ( ;; )
 	{
+		aim_packet_to_nuc.roll = imu_list[0]->angle[1];
+	    aim_packet_to_nuc.yaw = imu_list[0]->angle[0];
+	    aim_packet_to_nuc.pitch = - imu_list[0]->angle[2];
+//限幅
+	    if(aim_packet_from_nuc.yaw_diff < - PI/2)
+	    	aim_packet_from_nuc.yaw_diff =  - PI/2;
+	    else if(aim_packet_from_nuc.yaw_diff > PI/2 )
+	    	aim_packet_from_nuc.yaw_diff = PI/2;
+//赋值
+		gimbal_auto.yaw_diff = aim_packet_from_nuc.yaw_diff;
+		gimbal_auto.pitch_diff = - aim_packet_from_nuc.pitch_diff;//（方向相反）、
+//火控标志位
+	    if(aim_packet_from_nuc.fire_advice)
+	    {
+	    	gimbal_cmd.shoot_advice = 1;
+	    }
+	    else
+	    {
+	    	gimbal_cmd.shoot_advice = 0;
+	    }
+//云台，射击控制逻辑
 		GimbalCtrl (&gimbal_cmd);
 		ShooterCtrl (&gimbal_cmd);
 		
 		time = osKernelGetTickCount ();
 		osDelayUntil (time + GIMBAL_TASK_PERIOD);
+		gimbal_diff = osKernelGetTickCount () - time;
 		
 	}
 }

@@ -1,34 +1,13 @@
 #ifndef __PID_H__
 #define __PID_H__
-
 #include "main.h"
 
 //取绝对值
-#ifndef abs
-#define abs( x ) ((x > 0) ? x : -x)
+#ifndef ABS
+#define ABS(x) ((x) > 0 ? (x) : -(x) )
 #endif
 
-//0为关闭
-//TODO(GUATAI)其它优化PID函数以及前馈待测试
-#define TEST_FEED 0
-//TODO(GUATAI)输入处理待测试
-#define TEST_INPUT 0
-
 //定义前馈各阶参数
-//由正负数据得出的参数1
-// #define FEED_PARAM0 615.6f
-// #define FEED_PARAM1 1139.0f
-// #define FEED_PARAM2 -14.49f
-// #define FEED_PARAM3 -2.729f
-// #define FEED_PARAM4 0.04651f
-// #define FEED_PARAM5 0.006233f
-//只由正数据
-//#define FEED_PARAM0 1579.0f
-//#define FEED_PARAM1 700.0f
-//#define FEED_PARAM2 -14.42f
-//#define FEED_PARAM3 5.3938f
-//#define FEED_PARAM4 0.04975f
-//#define FEED_PARAM5 0.01144f
 //v1.2
 //#define FEED_PARAM0 794.4f
 //#define FEED_PARAM1 2466.0f
@@ -87,24 +66,7 @@ typedef struct __PID_TypeDef
 	float measure;
 	float last_measure;
 	float dead_band;
-#if TEST_FEED
-	PID_improvement_e improve;//PID开启优化选项
-	float ci_coefA;             // 变速积分 For Changing Integral
-	float ci_coefB;             // 变速积分 ITerm = Err*((A-abs(err)+B)/A)  when B<|err|<A+B
-	float dt;
-	uint32_t DWT_cnt;
-	float d_out_last;
-	float output_LPF_RC;     // 输出滤波器 RC = 1/omegac
-	float derivative_LPF_RC; // 微分滤波器系数
-#else
-#endif
-#if TEST_INPUT
-	float *ref_p; //设定值
-	float *fab_p; //反馈值
-	float target_change_max;
-	float input_LPF_RC;//输入滤波系数
-#else
-#endif
+
 	float Err_pre;
 	float Err_last;
 	float Err_now;
@@ -127,8 +89,6 @@ typedef enum
     DUAL_LOOP,   //双环控制，外环角度,内环速度
 	AMMO
 } PID_Type_e;
-
-extern float fit_data[5] ;
 
 extern float PID_Position( PID_TypeDef *hpid, float val_now, float target_now );
 

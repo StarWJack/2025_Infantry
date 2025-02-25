@@ -19,7 +19,7 @@ typedef struct __attribute__((packed))
 {
     uint8_t errorCode;          // 报错代码
     float chassisPower;         // 底盘功率
-    uint16_t chassisPowerLimit; // 底盘功率限制
+    uint16_t refreePower;       // 裁判系统功率
     uint8_t capEnergy;          // 超级电容能量
 } supercap_rx_data_t;
 
@@ -37,8 +37,6 @@ extern supercap_rx_data_t supercap_rx_data;
 extern supercap_tx_data_t supercap_tx_data;
 extern Can_InfoTypedef SuperCap_CanInfo;
 void SuperCapCtrlData_Send(void);
-void SuperCapRegist(SuperCap_InitTypedef st);
-
 void SuperCapInit(void);
 
 #endif // SUPERCAP_H

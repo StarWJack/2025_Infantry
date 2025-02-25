@@ -9,7 +9,8 @@
 #include "cmsis_os.h"
 
 Can_InfoTypedef *can_list[CAN_INST_NUM];
-int8_t can_index[CAN_NUM][CAN_HEADER_NUM][9]; // 为什么是9
+int8_t can_index[CAN_NUM][CAN_HEADER_NUM][9]; 
+
 CAN_TxHeaderTypeDef *can_txheader[CAN_HEADER_NUM];
 
 void CanSendMsg()
@@ -26,9 +27,6 @@ void CanSendMsg()
 		}
 		HAL_CAN_AddTxMessage(&hcan1, can_txheader[i], can_txdata, (uint32_t *)CAN_TX_MAILBOX0);
 
-		// #ifdef USE_SUPER_CAP
-		// 		HAL_CAN_AddTxMessage(&hcan1, &supercap_tx_header, (uint8_t *)&supercap_tx_data, (uint32_t *)CAN_TX_MAILBOX0);
-		// #endif
 
 #ifdef USE_CAN2
 		memset(can_txdata, 0, sizeof(can_txdata));

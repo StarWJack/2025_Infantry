@@ -15,6 +15,7 @@
 supercap_rx_data_t supercap_rx_data; // 定义接收数据结构体
 supercap_tx_data_t supercap_tx_data; // 定义发送数据结构体
 Can_InfoTypedef SuperCap_CanInfo;
+void SuperCapRegist(SuperCap_InitTypedef st);
 
 CAN_TxHeaderTypeDef supercap_txheader = {
     .ExtId = 0x0,
@@ -76,6 +77,11 @@ void SuperCapInit(void)
         .txheader_id = 0x061, // 发送ID
         .rxheader_id = 0x097, // 接收ID
     };
+
+    supercap_tx_data.feedbackRefereePowerLimit = 60;
+    supercap_tx_data.feedbackRefereeEnergyBuffer = 0;
+    supercap_tx_data.enableDCDC = 1;
+
     SuperCapRegist(init);
 }
 

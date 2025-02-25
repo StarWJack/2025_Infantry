@@ -23,7 +23,7 @@ typedef enum
 // NOTE: 考虑削减此项
 typedef enum
 {
-    BMI088,
+    BMI088_C,
     MPU6050
 } IMU_enum;
 
@@ -75,6 +75,8 @@ extern uint32_t sum;
 
 extern IMU_TypeDef *imu_list[IMU_NUM];
 extern void BMI088Update(IMU_TypeDef *imu);
-extern void IMUInit();
+extern void IMUInit(void);
+
+extern void IMU_Task(void *argument);
 
 #endif

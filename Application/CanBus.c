@@ -4,30 +4,29 @@
 #include "CanInst.h"
 #include "remote.h"
 #include "motor.h"
-#include "sin.h"
 #include "usart.h"
 #include "imu.h"
 #include "vofa.h"
 #include "Gimbal.h"
 #include "SuperCap.h"
+#include "ChassisPowerCtrl.h"
 
 osThreadId_t canbus_task_handel;
 RobotState_e robo_state;
+uint32_t CanBus_diff = 0;
 
 void CANBusInit ()
 {
 	const osThreadAttr_t attr = {
 			.name = "CANBusTask",
-			.stack_size = 128 * 32,
+			.stack_size = 128 * 16,
 			.priority = (osPriority_t) osPriorityHigh,
 	};
 	canbus_task_handel = osThreadNew (CANBusTask, NULL, &attr);
 	
 }
 
-uint32_t diff = 0;
 
-//TODO:修改控制逻辑
 void CANBusTask (void *argument)
 {
 	uint32_t time = osKernelGetTickCount ();
@@ -35,7 +34,7 @@ void CANBusTask (void *argument)
 	
 	for (;;)
 	{
-		
+
 		if (RC_Ctl . rc . sw1 != 1 && RC_Ctl . rc . sw1 != 3)
 		{
 			MotorStop (NULL);
@@ -53,8 +52,10 @@ void CANBusTask (void *argument)
 			robo_state = NORMAL;
 		}
 
+
+
 		CanSendMsg ();
-		imu_list[0] -> update (imu_list[0]);
+		CanBus_diff = osKernelGetTickCount () - time;
 		time = osKernelGetTickCount ();
 		osDelayUntil (time + CANBUS_TASK_PERIOD);
 	}

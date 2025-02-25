@@ -84,6 +84,7 @@ typedef enum
 	LEN_rfid_status	= 4,
 	LEN_dart_client_directive = 6,//0x020A
 	LEN_map_interactive_headerdata = 15,//0x20B
+
 	LEN_keyboard_information = 12,//0x0304
 
 }JudgeDataLength;

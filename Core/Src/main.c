@@ -18,7 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
 #include "can.h"
 #include "dma.h"
 #include "i2c.h"
@@ -32,14 +32,12 @@
 /* USER CODE BEGIN Includes */
 
 #include "imu.h"
-#include "SolveTrajectory.h"
 #include "referee.h"
 #include "remote.h"
-#include "sin.h"
 #include "motor.h"
 #include "SuperCap.h"
 #include "CanInst.h"
-#include "arm_math.h"
+#include "imu.h"
 
 /* USER CODE END Includes */
 
@@ -75,17 +73,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 
 extern void ControlInit();
 
-extern void CanInit(void);
-
-extern void MotorInit(void);
-
 extern void GimbalInit(void);
 
 extern void CANBusInit(void);
 
 extern void ChassisInit(void);
 
-extern void UI_taskInit(void);
+extern void CanInit(void);
+extern void MotorInit(void);
 
 /* USER CODE END PFP */
 
@@ -151,14 +146,16 @@ int main(void)
 	MotorInit();	// pid参数等各项初始化
 	CanInit();
 	SuperCapInit(); // 超级电容初始化
-	IMUInit(); // imu初始化，读取转换后的pitch和yaw以及roll数据，还有零点设置问题
 	RemoteInit();
 	RefereeInit();
 	/* 任务初始化 */
+
+	IMUTask_Init();
 	ControlInit();
 	CANBusInit();
 	GimbalInit();
 	ChassisInit();
+
 	//  UI_taskInit();
 
   /* USER CODE END 2 */

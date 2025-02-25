@@ -7,6 +7,9 @@
 #include "math.h"
 #include "MahonyAHRS.h"
 #include "motor.h"
+#include "cmsis_os2.h"
+
+osThreadId_t IMU_task_handle;
 
 IMU_TypeDef *imu_list[IMU_NUM];
 uint8_t spi_TxData, spi_RxData;
@@ -15,6 +18,7 @@ uint8_t spi_TxData, spi_RxData;
 float  bias[3]  = {0,0,0};
 uint32_t sum = 0;
 #endif
+
 
 void BMI088ReadAccel (IMU_TypeDef *imu)
 {
@@ -180,6 +184,7 @@ void BMI088Update (IMU_TypeDef *imu)
 	float static last_q[4];
 	memcpy (last_q, imu -> angle_q, 4 * sizeof (float));
 	MahonyAHRSupdateIMU (imu -> angle_q, imu_gyro, imu_accel);
+	
 	if ( imu -> angle_q[0] != imu -> angle_q[0] )
 	{
 //			 memcpy(imu->angle_q, last_q, 4*sizeof(float));
@@ -211,8 +216,9 @@ float IMUGetRoll (IMU_TypeDef *imu)
 	return imu -> angle[1] + PI;
 }
 
-void IMUInit ()
+void IMUInit (void)
 {
+
 	IMU_TypeDef static imu1;
 	imu1 . spi . hspi_x = &hspi1;
 	imu1 . spi . port_accel = CS1_Accel_GPIO_Port;
@@ -221,7 +227,7 @@ void IMUInit ()
 	imu1 . spi . pin_gyro = GPIO_PIN_0;
 	
 	imu1 . info . p_type = SPI;
-	imu1 . info . imu_type = BMI088;
+	imu1 . info . imu_type = BMI088_C;
 #ifdef Get_Bias
 	imu1.info.bias_g1 = 0 ;
 	imu1.info.bias_g2 = 0;
@@ -240,15 +246,34 @@ void IMUInit ()
 	imu1 . pitch = IMUGetPitch;
 	imu1 . yaw = IMUGetYaw;
 	imu1 . roll = IMUGetRoll;
+
 	imu1 . update = BMI088Update;
 	imu1 . info . enable = 1;
 	
 	BMI088Init (&imu1);
 	imu_list[0] = malloc (sizeof (IMU_TypeDef));
 	memcpy (imu_list[0], &imu1, sizeof (IMU_TypeDef));
-	float tmp = MotorGetVal (motor_list[MOTOR_PITCH], MOTORANGLE, ORIGIN);
-	if (tmp > 4096.0f)
-		imu_list[0]->info.pitch_zero_point = 8192 - tmp;
-	else
-		imu_list[0]->info.pitch_zero_point =  tmp;
+}
+
+
+void IMUTask_Init(void)
+{
+		osThreadAttr_t attr = {
+			.name = "IMU_Task" ,
+			.stack_size = 128 * 8 ,
+			.priority = (osPriority_t) osPriorityRealtime , };
+		IMU_task_handle = osThreadNew(IMU_Task, NULL, &attr);
+}
+
+void IMU_Task(void *argument)
+{
+	uint32_t time = osKernelGetTickCount ();
+	IMUInit();
+	for(;;)
+	{
+		BMI088Update(imu_list[0]);
+
+		time = osKernelGetTickCount();
+		osDelayUntil(time + IMU_TASK_PERIOD);
+	}
 }

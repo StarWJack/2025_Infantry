@@ -12,7 +12,15 @@ Chassis_CmdTypedef chassis_cmd;
 
 void ChassisTask (void *arguement);
 
-#if INFANTRY
+void ChassisInit (void)
+{
+	osThreadAttr_t task_attr = {
+			.name = "ChassisTask",
+			.stack_size = 128 * 4 ,
+			.priority = (osPriority_t) osPriorityAboveNormal2 ,
+	};
+	chassis_task_handel = osThreadNew (ChassisTask, NULL, &task_attr);
+}
 
 /*
  * @brief  	全向轮解算
@@ -56,14 +64,6 @@ float ChassisGetOmega (void)
 	return ret;
 }
 
-#endif
-
-
-void ChassisInit (void)
-{
-	osThreadAttr_t task_attr = {.name = "ChassisTask"};
-	chassis_task_handel = osThreadNew (ChassisTask, NULL, &task_attr);
-}
 
 void ChassisTask (void *arguement)
 {
@@ -98,7 +98,7 @@ void ChassisTask (void *arguement)
 
 		if ( chassis_cmd . mode == SPIN )
 		{
-			chassis_cmd.omega_z = 0.8;//固定小陀螺转速
+			chassis_cmd.omega_z = 0.5;//固定小陀螺转速
 		}
 		else if ( chassis_cmd . mode == FOLLOW )
 		{
@@ -121,17 +121,14 @@ void ChassisTask (void *arguement)
 				chassis.output = PID_Increment (&chassis . pid[INNER], chassis.value,chassis.target);
 			}
 			//如果不想跟随，注释下面底盘输出即可
-			chassis_cmd.omega_z = - chassis . output;
+//			chassis_cmd.omega_z = - chassis . output;
 		}
 		else
 		{
 			chassis_cmd.omega_z = 0;
 		}
-#if INFANTRY
 		OnmiSolve (&chassis_cmd, solve);
-#elif HERO
-		MecanumSolve(&chassis_cmd, solve,0);
-#endif
+		
 		for ( int i = 0; i < 4; i ++ )
 			MotorSetTar (motor_list[i + MOTOR_CHS_1], solve[i], ABS);
 		

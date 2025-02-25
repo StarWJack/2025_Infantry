@@ -9,11 +9,10 @@
 #include "malloc.h"
 #include "Chassis.h"
 #include "Gimbal.h"
-
+#include "ChassisPowerCtrl.h"
 
 //就近旋转，未完成
 #define MOTORPROXIMITY(tar, ref)
-
 
 Motor_TypeDef *motor_list[MOTOR_NUM];
 float data_view[10];
@@ -26,7 +25,6 @@ float MotorProximity (float tar, float ref)
 		tar += 2 * PI;
 	return tar;
 }
-
 
 /*
  * @brief  	计算PID并限幅
@@ -160,7 +158,9 @@ void my_MotorCalc (void)
 	motor_list[MOTOR_YAW] -> output_Position = PID_Position (&(motor_list[MOTOR_YAW] -> pid[ANGLE]), ref, tar);
 	motor_list[MOTOR_YAW] -> output = motor_list[MOTOR_YAW] -> output_Position;
 
-	tar = motor_list[MOTOR_YAW] -> output_Position + (12 * motor_list[MOTOR_YAW] -> feed_fwd);//底盘跟随时的角速度（类似前馈） rad/s
+	// tar = motor_list[MOTOR_YAW] -> output_Position + (12 * motor_list[MOTOR_YAW] -> feed_fwd);//底盘跟随时的角速度（类似前馈） rad/s 走不直
+
+	tar = motor_list[MOTOR_YAW] -> output_Position;//底盘跟随时的角速度（类似前馈） rad/s
 
 	ref = MotorGetVal (motor_list[MOTOR_YAW], MOTORSPEED, RAD);
 
@@ -202,6 +202,8 @@ void my_MotorCalc (void)
 		                                        );
 	}
 	
+//	chassis_power_control();
+
 	//#define MOTOR_AMMO 6
 	tar = motor_list[MOTOR_AMMO] -> target;
 	ref = MotorGetVal (motor_list[MOTOR_AMMO], MOTORSPEED, RAD);//rad/s
@@ -447,18 +449,18 @@ void MotorInit ()
 	init . pid_outer = pid_outer;
 	
 	pid_inner . Kp = 1500;//太大过零点噪声极大
-	pid_inner . Ki = 15;
+	pid_inner . Ki = 20;
 	pid_inner . Kd = 0;
 	pid_inner . Kf = 0;
-	pid_inner . Output_Max = 10000;
+	pid_inner . Output_Max = 15000;
 //	pid_inner . Output_Max = 0;//改为0调试
 	init . pid_inner = pid_inner;
 	MotorRegist (init);
 	
 	/* Chassis init */
-	pid_inner . Kp = 12;
-	pid_inner . Ki = 0.01f;
-	pid_inner . Kd = 0;
+	pid_inner . Kp = 35;
+	pid_inner . Ki = 0.15f;
+	pid_inner . Kd = 1;
 	pid_inner . Kf = 0;
 	pid_inner . Err_sum_Max = 1000;
 	pid_inner . Output_Max = 10000;
@@ -489,12 +491,11 @@ void MotorInit ()
 	MotorRegist (init);
 	
 	//shooter init
-	pid_inner . Kp = 420;
-	pid_inner . Ki = 15;
+	pid_inner . Kp = 500;
+	pid_inner . Ki = 10;
 	pid_inner . Kd = 50;
 	pid_inner . Kf = 0;
 	 pid_inner . Output_Max = 12000;
-//	pid_inner . Output_Max = 0;
 	init . pid_inner = pid_inner;
 	init . hcan = &hcan2;
 	init . can_id = 1;
