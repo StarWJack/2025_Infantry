@@ -11,6 +11,7 @@
 #include "SuperCap.h"
 #include "can.h"
 #include "string.h"
+#include "referee.h"
 
 supercap_rx_data_t supercap_rx_data; // 定义接收数据结构体
 supercap_tx_data_t supercap_tx_data; // 定义发送数据结构体
@@ -25,30 +26,6 @@ CAN_TxHeaderTypeDef supercap_txheader = {
     .TransmitGlobalTime = DISABLE,
 };
 
-// static void SuperCapFillMsg(Can_InfoTypedef *st, uint8_t *txdata, uint8_t list_id);
-// static void SuperCapCanCbk(Can_InfoTypedef *st, uint8_t *rxdata, uint8_t list_id);
-// /*
-//  * @brief 发送超级电容控制数据
-//  *
-//  */
-// void SuperCapCtrlData_Send(void)
-// {
-//     HAL_CAN_AddTxMessage(&hcan1, &supercap_tx_header, (uint8_t *)&supercap_tx_data, (uint32_t *)CAN_TX_MAILBOX0);
-// }
-// /*
-//  * @brief CAN接收中断回调函数
-//  *
-//  * @param hcan can句柄
-//  */
-// void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
-// {
-//     if (hcan == &hcan1)
-//     {
-//         CAN_RxHeaderTypeDef rx_header;
-//         HAL_CAN_GetRxMessage(&hcan1, CAN_RX_FIFO0, &rx_header, (uint8_t *)&supercap_rx_data);
-//     }
-//     HAL_CAN_ActivateNotification(hcan, CAN_IT_RX_FIFO0_MSG_PENDING);
-// }
 
 void SuperCapFillMsg(Can_InfoTypedef *st, uint8_t *txdata, uint8_t list_id)
 {
@@ -74,12 +51,13 @@ void SuperCapInit(void)
     SuperCap_InitTypedef init = {
         .can_id = 1,
         .hcan = &hcan1,       // 超级电容挂载在CAN1上
-        .txheader_id = 0x061, // 发送ID
+//      .txheader_id = 0x061, // 发送ID
+		.txheader_id = 0x062, // 发送ID
         .rxheader_id = 0x097, // 接收ID
     };
 
     supercap_tx_data.feedbackRefereePowerLimit = 60;
-    supercap_tx_data.feedbackRefereeEnergyBuffer = 0;
+    supercap_tx_data.feedbackRefereeEnergyBuffer = refree_info.Power_Heat_Data.buffer_energy;
     supercap_tx_data.enableDCDC = 1;
 
     SuperCapRegist(init);

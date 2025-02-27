@@ -19,6 +19,7 @@ uint8_t referee_pic_rx_len;
 uint8_t referee_rx_buf[REFEREE_RXBUFF_SIZE];           //dma接收区
 uint8_t referee_pic_rx_buf[REFEREE_PICBUFF_SIZE];		//图传数据
 uint8_t referee_tx_buf[REFEREE_TXBUFF_SIZE];                        //maximum 128 bytes
+
 Referee_InfoTypedef refree_info;             //裁判系统数据
 uint8_t UI_Seq = 0;
 
@@ -27,9 +28,10 @@ void RefereeInit()
 {
 //	HAL_DMA_RegisterCallback(&hdma_usart6_rx, HAL_DMA_XFER_CPLT_CB_ID, RefereeSolve);
 //	HAL_DMA_RegisterCallback(&hdma_usart1_rx, HAL_DMA_XFER_CPLT_CB_ID, RefereeSolve);
+	HAL_UARTEx_ReceiveToIdle_DMA(&huart1, referee_pic_rx_buf, REFEREE_PICBUFF_SIZE);
+	__HAL_DMA_DISABLE_IT(&hdma_usart1_rx,DMA_IT_HT);
 	HAL_UARTEx_ReceiveToIdle_DMA(&huart6, referee_rx_buf, REFEREE_RXBUFF_SIZE);
-	HAL_UARTEx_ReceiveToIdle_DMA(&huart1, referee_pic_rx_buf, REFEREE_PICBUFF_SIZE); 
-
+	__HAL_DMA_DISABLE_IT(&hdma_usart6_rx,DMA_IT_HT);
 }
 
 void RefereeSolve(uint8_t *data)
@@ -37,7 +39,7 @@ void RefereeSolve(uint8_t *data)
 
 	uint16_t offset_frame_tail = (data[Offset_SOF_DataLength + 1]<<8) + data[Offset_SOF_DataLength]
 							+LEN_CMD_ID +LEN_FRAME_HEAD;
-	uint16_t cmd_id = (data[Offset_cmd_ID + 1] << 8) + data[Offset_cmd_ID];
+	uint16_t cmd_id = (data[Offset_cmd_ID + 1] << 8 | data[Offset_cmd_ID] );
 
 	if(data[0] != 0xA5 || !Ref_Verify_CRC16_Check_Sum(data, offset_frame_tail +2)
 			           || !Verify_CRC8_Check_Sum(data, LEN_FRAME_HEAD))
@@ -109,7 +111,7 @@ void RefereeSolve(uint8_t *data)
 			memcpy(&(RC_Ctl.keyboard), (data + Offset_data), LEN_keyboard_information);
 			break;
 	}
-
+//有问题
 	if(data[offset_frame_tail+2] == 0xA5)
 		RefereeSolve(data +offset_frame_tail +2);
 	return;

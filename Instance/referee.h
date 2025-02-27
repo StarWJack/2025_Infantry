@@ -8,8 +8,8 @@
 #ifndef _REFEREE_H_
 #define _REFEREE_H_
 
-#define REFEREE_RXBUFF_SIZE 300
-#define REFEREE_PICBUFF_SIZE 100
+#define REFEREE_RXBUFF_SIZE 256
+#define REFEREE_PICBUFF_SIZE 50
 #define REFEREE_TXBUFF_SIZE 128
 #define Offset_SOF_DataLength 1      //裁判系统数据帧偏移
 #define Offset_CRC8 4

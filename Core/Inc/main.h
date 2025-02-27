@@ -67,10 +67,6 @@ void Error_Handler(void);
 #define Ammo_Counter_GPIO_Port GPIOB
 #define CS1_Gyro_Pin GPIO_PIN_0
 #define CS1_Gyro_GPIO_Port GPIOB
-#define LED_G_Pin GPIO_PIN_11
-#define LED_G_GPIO_Port GPIOH
-
-
 
 /* USER CODE BEGIN Private defines */
 #define CCMRAM __attribute__((section(".ccmram"))) // CCM宏定�?

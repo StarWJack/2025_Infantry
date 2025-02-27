@@ -53,12 +53,12 @@
 #define REMOTE_Y_SEN 0.002f
 
 // 键盘灵敏度设置
-#define KEYBOARD_YAW_SEN 0.001f
-#define KEYBOARD_PITCH_SEN 0.001f
+#define KEYBOARD_YAW_SEN 0.00001f
+#define KEYBOARD_PITCH_SEN 0.000008f
 
 // 控制器
-// #define USE_REMOTE_KEYBORAD     //若使用遥控器传输键鼠数据，取消注释
-// #define USE_KEYBOARD              //若使用键盘传输数据，取消注释
+//  #define USE_REMOTE    			//若使用遥控器传输数据，取消注释
+#define USE_KEYBOARD                //若使用键盘传输数据(图传链路)，取消注释
 
 // 车体数据
 #if INFANTRY
@@ -81,7 +81,7 @@
 // #define PITCH_UP_BOUND	3.58f
 // #define PITCH_LW_BOUND  PI	//pitch轴可动范围上下界
 // #define PITCH_MID       (0 +PI)  //pitch轴中间位置
-#define CHASSIS_ZEROPOINT 5121.0f			// 在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度 --- 即yaw轴零点（自设）
+#define CHASSIS_ZEROPOINT    5121.0f	 // 在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度 --- 即yaw轴零点（自主设定）
 #define CHASSIS_ZEROPOINT_FOLLOW 5766.0f // 在底盘跟随时的零点
 #define AMMO_DIR_INV					 // 拨弹盘为顺时针旋转
 
@@ -93,6 +93,7 @@
 #define MOTORSPEED_DIFF 2.0f // 弹速差异，m/s
 #define CALIBRATE 1			 // 弹速校准比率
 #define CHS_SPEED_LMT 2.0f
+
 #define CHS_SPIN_LMT 0.5 * PI // 底盘自旋速度
 
 // 比赛数据
@@ -116,6 +117,5 @@ typedef enum
 #endif
 
 // TODO:5、看门狗
-// TODO:6、遥控器启动不接收
 
 

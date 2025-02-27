@@ -58,6 +58,8 @@ typedef struct
        uint16_t C : 1;
        uint16_t V : 1;
        uint16_t B : 1;
+
+       uint16_t reserved;
     } __attribute__((packed))keyboard;
 
 }RC_Ctl_t;

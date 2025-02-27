@@ -102,6 +102,8 @@ void ChassisTask (void *arguement)
 		}
 		else if ( chassis_cmd . mode == FOLLOW )
 		{
+			chassis_cmd.omega_z = 0;
+
 			chassis.target = MotorGetVal (motor_list[MOTOR_YAW], ANGLE, ORIGIN);
 			chassis.value  = CHASSIS_ZEROPOINT;
 			while(chassis.target - chassis.value > 4096)

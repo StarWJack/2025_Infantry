@@ -16,9 +16,33 @@
 #include "referee.h"
 #include "usart.h"
 #include "SuperCap.h"
-#include "ChassisPowerCtrl.h"
 
 osThreadId_t control_task_handel;
+
+uint8_t shoot_flag;
+
+float Ramp_data(uint16_t val)
+{
+	float tar = 0;
+	if(val)
+	{
+		tar += 0.2;
+		if(tar >= 1)
+		{
+			tar = 1;
+		}
+	}
+	else
+	{
+		tar -= 0.2;
+		if(tar < 0)
+		{
+			tar = 0;
+		}
+	}
+	return tar;
+}
+
 
 void ControlInit (void)
 {
@@ -58,16 +82,48 @@ void ChassisCmdTrans (Chassis_CmdTypedef *cmd, float chs_zeropoint, float gim_an
 
 void KeyboardCtrl (Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 {
-	gim -> v_yaw -= (float) (RC_Ctl . keyboard . x >> 4) * KEYBOARD_YAW_SEN; //x -- 鼠标左右
-	gim -> v_pitch += (float) (RC_Ctl . keyboard . y >> 4) * KEYBOARD_PITCH_SEN;//y -- 上下
-	gim -> shooter = RC_Ctl . keyboard . l >= 1 ? AUTO : STOP;
+	gim -> v_yaw   = -(float) RC_Ctl . keyboard . x * KEYBOARD_YAW_SEN; //x -- 鼠标左右
+
+	gim -> v_pitch = (float) RC_Ctl . keyboard . y * KEYBOARD_PITCH_SEN;//y -- 上下
+
+
+	chs -> vx = ( Ramp_data(RC_Ctl . keyboard . W) * (-CHS_SPEED_LMT) ) +  ( Ramp_data(RC_Ctl . keyboard . S) * ( CHS_SPEED_LMT) ) ;
+	chs -> vy = ( Ramp_data(RC_Ctl . keyboard . A) * ( CHS_SPEED_LMT) ) +  ( Ramp_data(RC_Ctl . keyboard . D) * (-CHS_SPEED_LMT) ) ;
+
+	//开火
+	if ( RC_Ctl . keyboard . R )
+	{
+		shoot_flag = 1;
+	}
+	else if( RC_Ctl . keyboard . E )
+	{
+		shoot_flag = 0;
+	}
+
+	if ( shoot_flag == 1)
+	{
+		gim -> friction_state = 1;
+		if(RC_Ctl . keyboard . l )
+			gim -> shooter = SHOOT;
+		else if(RC_Ctl . keyboard . l == 0)
+			gim -> shooter = STOP;
+
+		else if(RC_Ctl . keyboard . r )
+			gim -> shooter = AUTO;
+
+	}
+	else if(shoot_flag ==0)
+	{
+		gim -> friction_state = 0;
+		gim -> shooter = STOP;
+	}
 	
-	chs -> vx = ((float) RC_Ctl . keyboard . W * (- CHS_SPEED_LMT)) + ((float) RC_Ctl . keyboard . S * (CHS_SPEED_LMT));
-	chs -> vy = ((float) RC_Ctl . keyboard . A * (- CHS_SPEED_LMT)) + ((float) RC_Ctl . keyboard . D * (CHS_SPEED_LMT));
+
 	if ( RC_Ctl . keyboard . SHIFT )
 		chs -> mode = SPIN;
 	else
 		chs -> mode = FOLLOW;
+
 }
 
 //canbus--RC_Ctl.rc.sw1 == 1 || RC_Ctl.rc.sw1 == 3 是开启状态
@@ -91,12 +147,10 @@ void RemoteCtrl (Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 	else
 	{
 		gim -> friction_state = 1;
-
 		if ( RC_Ctl . rc . sw2 == 3 )
 			gim -> shooter = SHOOT;//测试，小拨盘上下拨动发弹
 		else if ( RC_Ctl . rc . sw2 == 1 )
 			gim -> shooter = AUTO;//泼水
-			
 	}
 }
 
@@ -104,7 +158,7 @@ void RemoteCtrl (Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 void ControlTask (void *argument)
 {
 	RemoteInit ();
-	RefereeInit ();
+
 	Send_Packet_Init(&aim_packet_to_nuc);
 	uint32_t time = osKernelGetTickCount ();
 
@@ -112,7 +166,10 @@ void ControlTask (void *argument)
 	{
 		//收
 		UnPack_Data_ROS2(buf_receive_from_nuc, &aim_packet_from_nuc, sizeof (aim_packet_from_nuc));
+
+#ifdef USE_REMOTE
 		RemoteCtrl (&gimbal_cmd, &chassis_cmd);
+#endif
 
 #ifdef USE_KEYBOARD
 		KeyboardCtrl(&gimbal_cmd, &chassis_cmd);

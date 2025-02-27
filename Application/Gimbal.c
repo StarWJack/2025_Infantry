@@ -88,23 +88,32 @@ void ShooterCtrl (Gimbal_CmdTypedef *st)
 		MotorSetTar (motor_list[MOTOR_SHT_L], 0, ABS);
 		MotorSetTar (motor_list[MOTOR_SHT_R], 0, ABS);
 	}
-	//sw2 == 2;
+	//sw2 == 2; 摩擦轮启动但拨弹盘不旋转
 	if ( st -> shooter == STOP )
 	{
 		// gimbal_cmd . shooter_state = SHOOTER_STOP;
 		MotorSetTar (motor_list[MOTOR_AMMO], 0, ABS);
 
-		MotorSetTar (motor_list[MOTOR_SHT_L], 0, ABS);
-		MotorSetTar (motor_list[MOTOR_SHT_R], 0, ABS);
 	}
 
 	else if( st -> shooter == SHOOT )
 	{
+		#ifdef USE_REMOTE
 		float tar = st -> v_shoot * 2 * PI /36; // 实际弹频 = v_shoot/36（拨弹盘一圈）/10(任务周期) *8  k/s
 		if(tar > 0)
 		{
 			tar = -tar;
 		}
+		#endif
+
+		#ifdef USE_KEYBOARD
+		float tar = 660 * 2 * PI /36; // 实际弹频 = v_shoot/36（拨弹盘一圈）/10(任务周期) *8  k/s
+		if(tar > 0)
+		{
+			tar = -tar;
+		}
+		#endif
+		
 		MotorSetTar (motor_list[MOTOR_AMMO], tar, ABS);
 	}
 //自瞄+火控

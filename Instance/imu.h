@@ -76,6 +76,7 @@ extern uint32_t sum;
 extern IMU_TypeDef *imu_list[IMU_NUM];
 extern void BMI088Update(IMU_TypeDef *imu);
 extern void IMUInit(void);
+extern void IMUTask_Init(void);
 
 extern void IMU_Task(void *argument);
 

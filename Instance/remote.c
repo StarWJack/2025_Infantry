@@ -84,17 +84,17 @@ void RemoteSolve()
 	    RemoteRestart();
 	    return ;
 	}
-	#ifdef USE_REMOTE_KEYBORAD
-	    memcpy(&RC_Ctl.keyboard, remote_rxbuff +6, 8);
-	    RC_Ctl.keyboard.W = remote_rxbuff[14] & 0x80;
-	    RC_Ctl.keyboard.S = remote_rxbuff[14] & 0x40;
-	    RC_Ctl.keyboard.A = remote_rxbuff[14] & 0x20;
-	    RC_Ctl.keyboard.D = remote_rxbuff[14] & 0x10;
-	    RC_Ctl.keyboard.Q = remote_rxbuff[14] & 0x08;
-	    RC_Ctl.keyboard.E = remote_rxbuff[14] & 0x04;
-	    RC_Ctl.keyboard.SHIFT = remote_rxbuff[14] & 0x02;
-	    RC_Ctl.keyboard.CTRL = remote_rxbuff[14] & 0x01;
-	#endif
+//	#ifdef USE_REMOTE_KEYBORAD
+//	    memcpy(&RC_Ctl.keyboard, remote_rxbuff +6, 8);
+//	    RC_Ctl.keyboard.W = remote_rxbuff[14] & 0x80;
+//	    RC_Ctl.keyboard.S = remote_rxbuff[14] & 0x40;
+//	    RC_Ctl.keyboard.A = remote_rxbuff[14] & 0x20;
+//	    RC_Ctl.keyboard.D = remote_rxbuff[14] & 0x10;
+//	    RC_Ctl.keyboard.Q = remote_rxbuff[14] & 0x08;
+//	    RC_Ctl.keyboard.E = remote_rxbuff[14] & 0x04;
+//	    RC_Ctl.keyboard.SHIFT = remote_rxbuff[14] & 0x02;
+//	    RC_Ctl.keyboard.CTRL = remote_rxbuff[14] & 0x01;
+//	#endif
 
 }
 
@@ -140,14 +140,18 @@ void RemoteInit(void)
 	HAL_UARTEx_ReceiveToIdle_DMA(&huart3, remote_rxbuff, REMOTE_RXBUFF_SIZE);
 }
 
+
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
 	if(huart->Instance == USART1)
 	{
+		HAL_UART_DMAStop(&huart1);//防止在函数处理时DMA一直接收数据
+
 		referee_pic_rx_len = Size;
 		RefereeSolve(referee_pic_rx_buf);
 		memset(referee_pic_rx_buf, 0, REFEREE_PICBUFF_SIZE);
 		HAL_UARTEx_ReceiveToIdle_DMA(&huart1, referee_pic_rx_buf, REFEREE_PICBUFF_SIZE);
+		__HAL_DMA_DISABLE_IT(&hdma_usart1_rx, DMA_IT_HT);
 	}
 	else if(huart->Instance == USART3)
 	{
@@ -157,12 +161,44 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 	}
 	else if(huart->Instance == USART6)
 	{
+		HAL_UART_DMAStop(&huart6);
 		referee_rx_len = Size;
 		RefereeSolve(referee_rx_buf);
 		memset(referee_rx_buf, 0, REFEREE_RXBUFF_SIZE);
 		HAL_UARTEx_ReceiveToIdle_DMA(&huart6, referee_rx_buf, REFEREE_RXBUFF_SIZE);
 	}
-
 }
 
+//串口错误回调函数
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+	if(huart->Instance == USART1)
+	{
+		//检查错误标志位
+		if(__HAL_UART_GET_FLAG(huart, UART_FLAG_NE))//噪声错误标志位
+		{
+			__HAL_UART_CLEAR_NEFLAG(huart);//清除
+		}
+		if(__HAL_UART_GET_FLAG(huart, UART_FLAG_FE))
+		{
+			 __HAL_UART_CLEAR_FEFLAG(huart);
+	    }
+		if (__HAL_UART_GET_FLAG(huart, UART_FLAG_PE))
+		{
+			__HAL_UART_CLEAR_PEFLAG(huart);// 清除奇偶校验错误标志位
+		}
+		if (__HAL_UART_GET_FLAG(huart, UART_FLAG_ORE)) // 溢出错误标志位
+		{
+			__HAL_UART_CLEAR_OREFLAG(huart);
+		}
 
+		// 重新启动串口接收（如果需要）
+		HAL_UARTEx_ReceiveToIdle_DMA(&huart1, referee_pic_rx_buf, REFEREE_PICBUFF_SIZE);
+		__HAL_DMA_DISABLE_IT(&hdma_usart1_rx,DMA_IT_HT);
+	}
+
+	else if(huart->Instance == USART3)
+	{
+		RemoteRestart();
+	}
+}

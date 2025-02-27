@@ -19,7 +19,7 @@ void CANBusInit ()
 {
 	const osThreadAttr_t attr = {
 			.name = "CANBusTask",
-			.stack_size = 128 * 16,
+			.stack_size = 128 * 8,
 			.priority = (osPriority_t) osPriorityHigh,
 	};
 	canbus_task_handel = osThreadNew (CANBusTask, NULL, &attr);
@@ -30,11 +30,13 @@ void CANBusInit ()
 void CANBusTask (void *argument)
 {
 	uint32_t time = osKernelGetTickCount ();
+	MotorStop (NULL);
 	robo_state = BAN;
 	
 	for (;;)
 	{
 
+#ifdef USE_REMOTE
 		if (RC_Ctl . rc . sw1 != 1 && RC_Ctl . rc . sw1 != 3)
 		{
 			MotorStop (NULL);
@@ -51,8 +53,37 @@ void CANBusTask (void *argument)
 			my_MotorCalc ();
 			robo_state = NORMAL;
 		}
+#endif
 
+#ifdef USE_KEYBOARD
 
+		if(RC_Ctl . keyboard . C)
+		{
+			robo_state = NORMAL;
+			if (robo_state == NORMAL)
+			{
+				for (int i = 0; i < MOTOR_NUM; i ++)
+					motor_list[i] -> info . enable = 1;
+				GimbalMotorPosi_Init();
+			}
+		}
+
+		else if(RC_Ctl . keyboard . V)
+		{
+			robo_state = BAN;
+			MotorStop (NULL);
+		}
+
+		if(robo_state == NORMAL)
+		{
+			my_MotorCalc ();
+		}
+		else if(robo_state == BAN)
+		{
+			MotorStop (NULL);
+		}
+
+#endif
 
 		CanSendMsg ();
 		CanBus_diff = osKernelGetTickCount () - time;
