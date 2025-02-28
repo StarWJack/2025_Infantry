@@ -84,7 +84,7 @@ void KeyboardCtrl (Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 {
 	gim -> v_yaw   = -(float) RC_Ctl . keyboard . x * KEYBOARD_YAW_SEN; //x -- 鼠标左右
 
-	gim -> v_pitch = (float) RC_Ctl . keyboard . y * KEYBOARD_PITCH_SEN;//y -- 上下
+	gim -> v_pitch =  (float) RC_Ctl . keyboard . y * KEYBOARD_PITCH_SEN;//y -- 上下
 
 
 	chs -> vx = ( Ramp_data(RC_Ctl . keyboard . W) * (-CHS_SPEED_LMT) ) +  ( Ramp_data(RC_Ctl . keyboard . S) * ( CHS_SPEED_LMT) ) ;
@@ -118,7 +118,6 @@ void KeyboardCtrl (Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 		gim -> shooter = STOP;
 	}
 	
-
 	if ( RC_Ctl . keyboard . SHIFT )
 		chs -> mode = SPIN;
 	else
@@ -176,10 +175,24 @@ void ControlTask (void *argument)
 #endif
 		//云台坐标系转底盘坐标系
 		ChassisCmdTrans (&chassis_cmd, CHASSIS_ZEROPOINT, MotorGetVal (motor_list[MOTOR_YAW], MOTORANGLE, ORIGIN));
-//		vofa_demo3(supercap_rx_data.chassisPower,
-//				   initial_total_power,
-//				   supercap_rx_data.capEnergy);
 		
+//		vofa_demo(MotorGetVal (motor_list[2], MOTORSPEED, RAD),
+//				  MotorGetVal (motor_list[3], MOTORSPEED, RAD),
+//				  MotorGetVal (motor_list[4], MOTORSPEED, RAD),
+//				  MotorGetVal (motor_list[5], MOTORSPEED, RAD),
+//				  chassis . omega_z_ref,
+//				  moto_total);
+//		vofa_demo((MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN)  + gimbal_auto.yaw_diff),
+//				   MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN),
+//				   (MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN)  + gimbal_auto.yaw_diff),
+//				   MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN),1,1);
+
+		vofa_demo(refree_info.Power_Heat_Data.buffer_energy,
+				   refree_info.Game_Robot_state.chassis_power_limit,
+				   supercap_rx_data.refreePower,
+		           supercap_rx_data.capEnergy,
+				   supercap_rx_data.chassisPower,60);
+
 		//打包发送
 		Pack_And_Send_Data_ROS2 (&aim_packet_to_nuc);
 

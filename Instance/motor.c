@@ -11,8 +11,6 @@
 #include "Gimbal.h"
 #include "ChassisPowerCtrl.h"
 
-//就近旋转，未完成
-#define MOTORPROXIMITY(tar, ref)
 
 Motor_TypeDef *motor_list[MOTOR_NUM];
 float data_view[10];
@@ -158,9 +156,9 @@ void my_MotorCalc (void)
 	motor_list[MOTOR_YAW] -> output_Position = PID_Position (&(motor_list[MOTOR_YAW] -> pid[ANGLE]), ref, tar);
 	motor_list[MOTOR_YAW] -> output = motor_list[MOTOR_YAW] -> output_Position;
 
-	// tar = motor_list[MOTOR_YAW] -> output_Position + (12 * motor_list[MOTOR_YAW] -> feed_fwd);//底盘跟随时的角速度（类似前馈） rad/s 走不直
+	tar = motor_list[MOTOR_YAW] -> output_Position + (2*PI *motor_list[MOTOR_YAW] -> feed_fwd);//底盘跟随时的角速度（类似前馈） rad/s
 
-	tar = motor_list[MOTOR_YAW] -> output_Position;//底盘跟随时的角速度（类似前馈） rad/s
+//	tar = motor_list[MOTOR_YAW] -> output_Position;//底盘跟随时的角速度（类似前馈） rad/s
 
 	ref = MotorGetVal (motor_list[MOTOR_YAW], MOTORSPEED, RAD);
 
@@ -357,7 +355,7 @@ void MotorAllEnabled (void)
  * @param	电机初始化结构体
  * @retval 	无
  */
-//TODO: 添加对其他电机的支持
+
 CAN_TxHeaderTypeDef txheader = {
 		.ExtId =   0x0,
 		.IDE = CAN_ID_STD,
@@ -390,7 +388,7 @@ void MotorRegist (Motor_InitTypedef st)
 	motor . pid[INNER] = st . pid_inner;
 	motor . feed_fwd = 0;
 //    if(st.pid_type == DUAL_LOOP)
-    //定义了一个函数指针value，存放一个函数
+//  定义了一个函数指针value，存放一个函数
 	motor . value = st . source;    //avoid null pointer
 	
 	motor_list[st . list_id] = malloc (sizeof (Motor_TypeDef));
@@ -400,7 +398,7 @@ void MotorRegist (Motor_InitTypedef st)
 void MotorInit ()
 {
 	PID_TypeDef pid_outer = {
-			.Kp = 8.5,  //大小应与遥控器输入量一同调节，p太大应引起目标点抖动
+			.Kp = 12,  //大小应与遥控器输入量一同调节，p太大应引起目标点抖动
 			.Ki = 0,
 			.Kd = 0,
 			.Kf = 0,
@@ -414,7 +412,7 @@ void MotorInit ()
 			pid_inner . Ki = 8,   //太小会回弹
 			pid_inner . Kd = 0,
 			pid_inner . Kf = 1,
-			pid_inner . Output_Max = 12000, //5000-15000最合适
+			pid_inner . Output_Max = 15000, //5000-15000最合适
 	};
 	
 	Motor_InitTypedef init = {

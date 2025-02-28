@@ -67,7 +67,6 @@ void CANBusTask (void *argument)
 				GimbalMotorPosi_Init();
 			}
 		}
-
 		else if(RC_Ctl . keyboard . V)
 		{
 			robo_state = BAN;

@@ -5,8 +5,12 @@
 // 默认为步兵
 #define INFANTRY 1
 
+//-------------------- 控制器 -------------------------
+ #define USE_REMOTE    			//若使用遥控器传输数据，取消注释
+//#define USE_KEYBOARD                //若使用键盘传输数据(图传链路)，取消注释
 // #define USE_SUPERCAP  //若使用超级电容，取消注释
-// 电机
+
+//--------------------  电机  -------------------------
 #if INFANTRY
 #define MOTOR_NUM 9 // 电机总数
 #define MOTOR_YAW 1 // 电机列表索引测试用
@@ -45,27 +49,26 @@
 
 // 遥控器灵敏度设置
 // #define REMOTE_YAW_SEN 0.03f  //
-#define REMOTE_YAW_SEN 0.000006f //
+#define REMOTE_YAW_SEN 0.00001f //
 // #define REMOTE_YAW_SEN 0.005  //
 // #define REMOTE_PITCH_SEN 0.0000006125f
 #define REMOTE_PITCH_SEN 0.000006125f
 #define REMOTE_X_SEN 0.002f
 #define REMOTE_Y_SEN 0.002f
-
+// -----------------------------------------------
 // 键盘灵敏度设置
-#define KEYBOARD_YAW_SEN 0.00001f
-#define KEYBOARD_PITCH_SEN 0.000008f
+#define KEYBOARD_YAW_SEN 0.00005f
+#define KEYBOARD_PITCH_SEN 0.00001f
 
-// 控制器
-//  #define USE_REMOTE    			//若使用遥控器传输数据，取消注释
-#define USE_KEYBOARD                //若使用键盘传输数据(图传链路)，取消注释
 
 // 车体数据
 #if INFANTRY
 #define WHEEL_RADIUS 0.075f // 底盘车轮半径, 米
 #define CHASSIS_RADIUS 0.214f
+
 #define FRICTION_RADIUS 0.03 // 摩擦轮半径
 #endif
+
 
 /*步兵1*/
 
@@ -89,7 +92,7 @@
 //  #define SHOOT_FREQ 15    //射频, hz
 #define SHOOT_FREQ 20 // 射频, hz
 // #define BULLET_V 25     //弹速, m/s
-#define BULLET_V 10			 // 弹速, m/s
+#define BULLET_V 35			 // 弹速, m/s
 #define MOTORSPEED_DIFF 2.0f // 弹速差异，m/s
 #define CALIBRATE 1			 // 弹速校准比率
 #define CHS_SPEED_LMT 2.0f

@@ -27,24 +27,28 @@ static void F_Output_Limit (PID_TypeDef *hpid)
 float PID_Position (PID_TypeDef *hpid, float val_now, float target_now)
 {
 
+	//观测
+	hpid->measure = val_now;
+	hpid->target = target_now;
+
 	hpid -> Err_now = target_now - val_now;
 
-		hpid -> Err_sum += hpid -> Err_now;
-		
-		if ( hpid -> Err_sum < - hpid -> Err_sum_Max )
-		{
-			hpid -> Err_sum = - hpid -> Err_sum_Max;
-		}
-		if ( hpid -> Err_sum > hpid -> Err_sum_Max )
-		{
-			hpid -> Err_sum = hpid -> Err_sum_Max;
-		}
-		
-		hpid -> p_out = hpid -> Kp * hpid -> Err_now;
-		hpid -> i_out = hpid -> Ki * hpid -> Err_sum;
-		hpid -> d_out = hpid -> Kd * (hpid -> Err_now - hpid -> Err_last);
-		
-		hpid -> Output = hpid -> p_out + hpid -> i_out + hpid -> d_out;
+	hpid -> Err_sum += hpid -> Err_now;
+
+	if ( hpid -> Err_sum < - hpid -> Err_sum_Max )
+	{
+		hpid -> Err_sum = - hpid -> Err_sum_Max;
+	}
+	if ( hpid -> Err_sum > hpid -> Err_sum_Max )
+	{
+		hpid -> Err_sum = hpid -> Err_sum_Max;
+	}
+
+	hpid -> p_out = hpid -> Kp * hpid -> Err_now;
+	hpid -> i_out = hpid -> Ki * hpid -> Err_sum;
+	hpid -> d_out = hpid -> Kd * (hpid -> Err_now - hpid -> Err_last);
+
+	hpid -> Output = hpid -> p_out + hpid -> i_out + hpid -> d_out;
 
 	F_Output_Limit (hpid);
 	
@@ -79,6 +83,9 @@ float PID_Increment (PID_TypeDef *hpid, float val_now, float target_now)
 	
 	hpid->Err_pre = hpid->Err_now - hpid->Err_last;
 	hpid->Err_last = hpid->Err_now;
+//观测
+	hpid->measure = val_now;
+	hpid->target = target_now;
 
 	hpid -> Output_last = hpid -> Output;
 	return hpid->Output;

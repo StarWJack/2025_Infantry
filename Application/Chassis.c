@@ -40,7 +40,7 @@ void OnmiSolve (Chassis_CmdTypedef *cmd, float *ret)
 		   4\\      //3
 					
 	*/
-	float omega_z = cmd -> omega_z;
+	float omega_z = cmd -> omega_z + cmd -> omega_fllow;
 	ret[0] = (omega_z * (2 * PI * CHASSIS_RADIUS) - (- cmd -> vx - cmd -> vy) * SQRT_2) / WHEEL_RADIUS;
 	ret[1] = (omega_z * (2 * PI * CHASSIS_RADIUS) - (cmd -> vx - cmd -> vy) * SQRT_2) / WHEEL_RADIUS;
 	ret[2] = (omega_z * (2 * PI * CHASSIS_RADIUS) - (cmd -> vx + cmd -> vy) * SQRT_2) / WHEEL_RADIUS;
@@ -49,21 +49,21 @@ void OnmiSolve (Chassis_CmdTypedef *cmd, float *ret)
 
 /*
  * @brief  	全向轮逆解算(3508电机)
- * @param	底盘四电机结构体指针，顺序1-4
- * @retval 	底盘自旋速度，rps
+ * @param	底盘四电机结构体指针ID，顺序2-5
+ * @retval 	底盘自旋速度，rad/s
  * @todo    按需增加对里程的解算
  */
 float ChassisGetOmega (void)
 {
-	float ret = 0;
-	for ( int i = MOTOR_CHS_1; i < 4; i ++ )
-		ret += MotorGetVal (motor_list[i], MOTORSPEED, ORIGIN);
-	ret = ret / 60;    //RPM to RPS
-	ret = (ret * 187.0f / 3591.0f) / 4;    //转换到输出端转速
-	ret = ret * (WHEEL_RADIUS / CHASSIS_RADIUS);
-	return ret;
+	uint8_t i = 0;
+	float v_total = 0;//四个3508转子的角速度之和
+	for(i = MOTOR_CHS_1; i <= MOTOR_CHS_4; i++)
+		v_total += MotorGetVal (motor_list[i], MOTORSPEED, ORIGIN);
+	v_total = v_total/4;                                        //平均一个3508 ， 单位rpm
+	v_total = v_total * (187/3591.0f) /60;                      // 转子 --> 转轴   rpm-->rps
+	v_total = v_total * WHEEL_RADIUS / CHASSIS_RADIUS; // rps （轮子的线速度 = 底盘的线速度） 单位变换时要调内环PID
+	return v_total;    //滤波
 }
-
 
 void ChassisTask (void *arguement)
 {
@@ -98,10 +98,12 @@ void ChassisTask (void *arguement)
 
 		if ( chassis_cmd . mode == SPIN )
 		{
-			chassis_cmd.omega_z = 0.5;//固定小陀螺转速
+			chassis_cmd.omega_z = 0;//固定小陀螺转速
+			chassis_cmd.omega_fllow = 0;
 		}
 		else if ( chassis_cmd . mode == FOLLOW )
 		{
+			//小陀螺转速清零
 			chassis_cmd.omega_z = 0;
 
 			chassis.target = MotorGetVal (motor_list[MOTOR_YAW], ANGLE, ORIGIN);
@@ -111,23 +113,28 @@ void ChassisTask (void *arguement)
 			while(chassis.target - chassis.value < -4096)
 					chassis.target += 8192.0f;
 			//双环控制+500死区
-			if( (chassis.target - chassis.value) < 500 && (chassis.target - chassis.value) > -500)
+			if( (chassis.target - chassis.value) < 300 && (chassis.target - chassis.value) > -300)
 			{
 				chassis.output = 0;
 			}
 			else
 			{
+//				//进行PID计算前转换为弧度制，方便计算
+//				chassis.value = chassis.value *2*PI /8192;
+//				chassis.target = chassis.target *2*PI /8192;
+
 				chassis.output = PID_Position (&chassis . pid[OUTER], chassis.value,chassis.target);
 				chassis.target = chassis . output;
 				chassis.value  = chassis . omega_z_ref;//角速度
 				chassis.output = PID_Increment (&chassis . pid[INNER], chassis.value,chassis.target);
 			}
 			//如果不想跟随，注释下面底盘输出即可
-//			chassis_cmd.omega_z = - chassis . output;
+			chassis_cmd.omega_fllow = - chassis . output;
 		}
 		else
 		{
 			chassis_cmd.omega_z = 0;
+			chassis_cmd.omega_fllow = 0;
 		}
 		OnmiSolve (&chassis_cmd, solve);
 		

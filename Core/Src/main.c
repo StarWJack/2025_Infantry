@@ -142,13 +142,13 @@ int main(void)
   HAL_CAN_Start(&hcan2);
 #endif
 
-	/* 模块初始�? */
+	/* 模块初始�? */
 	MotorInit();	// pid参数等各项初始化
 	CanInit();
-	SuperCapInit(); // 超级电容初始�?
+	SuperCapInit(); // 超级电容初始�?
 	RemoteInit();
 	RefereeInit();
-	/* 任务初始�? */
+	/* 任务初始�? */
 
 	IMUTask_Init();
 	ControlInit();

@@ -9,6 +9,7 @@
 #include "remote.h"
 #include "imu.h"
 #include "Serial.h"
+#include "vofa.h"
 
 osThreadId_t gimbal_task_handel;
 Gimbal_CmdTypedef gimbal_cmd;
@@ -29,11 +30,35 @@ void GimbalInit (void)
 
 void GimbalCtrl (Gimbal_CmdTypedef *st)
 {
-	//自瞄
-	if(st -> shooter == AUTO && st -> shoot_advice)
+#ifdef USE_REMOTE
+	if(st -> shooter == STOP)
+	{
+		//目标值+增量
+		float tmp = motor_list[MOTOR_YAW] -> target + st -> v_yaw ;
+		// （0 < tmp < 2*PI) 过零点限制范围
+			 while ( tmp > 2*PI )
+				 tmp -= 2 * PI;
+			 while ( tmp <0 )
+				 tmp += 2 * PI;
+
+		// 	while ( tmp > 8192 )
+		// 			tmp -= 8192;
+		// 	while ( tmp <0 )
+		// 			tmp += 8192;
+		//	float tmp = st -> v_yaw ;
+			MotorSetTar (motor_list[MOTOR_YAW], tmp, ABS);
+
+			tmp = motor_list[MOTOR_PITCH] -> target - st -> v_pitch;
+			//pitch限制范围，绝对位置---有待优化，上限角度限死
+			if(tmp > PITCH_LH_BOUND)
+				tmp = PITCH_LH_BOUND;
+			else if(tmp < PITCH_LL_BOUND)
+				tmp = PITCH_LL_BOUND;
+			MotorSetTar (motor_list[MOTOR_PITCH], tmp, ABS);
+	}
+	else//自瞄
 	{
 		tar_yaw = MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN)  + gimbal_auto.yaw_diff ;
-
 		while ( tar_yaw > 2*PI )
 			tar_yaw -= 2 * PI;
 		while ( tar_yaw <0 )
@@ -47,31 +72,52 @@ void GimbalCtrl (Gimbal_CmdTypedef *st)
 			tar_pitch = PITCH_LL_BOUND;
 		MotorSetTar (motor_list[MOTOR_PITCH], tar_pitch, ABS);
 	}
-	else
-	{	
-		//目标值+增量
-		float tmp = motor_list[MOTOR_YAW] -> target + st -> v_yaw ;
-		// （0 < tmp < 2*PI) 过零点限制范围
-			 while ( tmp > 2*PI )
-				 tmp -= 2 * PI;
-			 while ( tmp <0 )
-				 tmp += 2 * PI;
-		
-		// 	while ( tmp > 8192 )
-		// 			tmp -= 8192;
-		// 	while ( tmp <0 )
-		// 			tmp += 8192;
-		//	float tmp = st -> v_yaw ;
-			MotorSetTar (motor_list[MOTOR_YAW], tmp, ABS);
-		
-			tmp = motor_list[MOTOR_PITCH] -> target - st -> v_pitch;
-			//pitch限制范围，绝对位置---有待优化，上限角度限死
-			if(tmp > PITCH_LH_BOUND)
-				tmp = PITCH_LH_BOUND;
-			else if(tmp < PITCH_LL_BOUND)
-				tmp = PITCH_LL_BOUND;
-			MotorSetTar (motor_list[MOTOR_PITCH], tmp, ABS);
-	}
+#endif
+
+#ifdef USE_KEYBOARD
+		if(st -> shooter == AUTO && st -> shoot_advice )//自瞄 -- 云台跟随和火控分开
+		{
+			tar_yaw = MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN)  + gimbal_auto.yaw_diff ;
+			while ( tar_yaw > 2*PI )
+				tar_yaw -= 2 * PI;
+			while ( tar_yaw <0 )
+				tar_yaw += 2 * PI;
+			MotorSetTar (motor_list[MOTOR_YAW], tar_yaw, ABS);
+
+			tar_pitch = MotorGetVal (motor_list[MOTOR_PITCH], IMU, RAD) + gimbal_auto.pitch_diff ;
+			if(tar_pitch > PITCH_LH_BOUND)
+				tar_pitch = PITCH_LH_BOUND;
+			else if(tar_pitch < PITCH_LL_BOUND)
+				tar_pitch = PITCH_LL_BOUND;
+			MotorSetTar (motor_list[MOTOR_PITCH], tar_pitch, ABS);
+		}
+	    else
+		{
+			//目标值+增量
+			float tmp = motor_list[MOTOR_YAW] -> target + st -> v_yaw ;
+			// （0 < tmp < 2*PI) 过零点限制范围
+				 while ( tmp > 2*PI )
+					 tmp -= 2 * PI;
+				 while ( tmp <0 )
+					 tmp += 2 * PI;
+
+			// 	while ( tmp > 8192 )
+			// 			tmp -= 8192;
+			// 	while ( tmp <0 )
+			// 			tmp += 8192;
+			//	float tmp = st -> v_yaw ;
+				MotorSetTar (motor_list[MOTOR_YAW], tmp, ABS);
+
+				tmp = motor_list[MOTOR_PITCH] -> target - st -> v_pitch;
+				//pitch限制范围，绝对位置---有待优化，上限角度限死
+				if(tmp > PITCH_LH_BOUND)
+					tmp = PITCH_LH_BOUND;
+				else if(tmp < PITCH_LL_BOUND)
+					tmp = PITCH_LL_BOUND;
+				MotorSetTar (motor_list[MOTOR_PITCH], tmp, ABS);
+		}
+#endif
+
 }
 
 
@@ -107,7 +153,7 @@ void ShooterCtrl (Gimbal_CmdTypedef *st)
 		#endif
 
 		#ifdef USE_KEYBOARD
-		float tar = 660 * 2 * PI /36; // 实际弹频 = v_shoot/36（拨弹盘一圈）/10(任务周期) *8  k/s
+		float tar = 1100 * 2 * PI /36; // 实际弹频 = v_shoot/36（拨弹盘一圈）/10(任务周期) *8  k/s
 		if(tar > 0)
 		{
 			tar = -tar;
@@ -119,7 +165,7 @@ void ShooterCtrl (Gimbal_CmdTypedef *st)
 //自瞄+火控
 	else if ( st -> shooter == AUTO && st -> shoot_advice)
 	{
-		float tar = 770 * 2 * PI /36;  //固定值
+		float tar = 1430 * 2 * PI /36;  //固定值
 		if(tar > 0)
 		{
 			tar = -tar;
@@ -173,6 +219,12 @@ void GimbalTask (void *argument)
 		GimbalCtrl (&gimbal_cmd);
 		ShooterCtrl (&gimbal_cmd);
 		
+//		vofa_demo((MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN)  + gimbal_auto.yaw_diff),
+//						   MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN),
+//						   (MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN)  + gimbal_auto.yaw_diff),
+//						   MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN),
+//						   1,1);
+
 		time = osKernelGetTickCount ();
 		osDelayUntil (time + GIMBAL_TASK_PERIOD);
 		gimbal_diff = osKernelGetTickCount () - time;

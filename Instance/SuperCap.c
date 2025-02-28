@@ -29,6 +29,10 @@ CAN_TxHeaderTypeDef supercap_txheader = {
 
 void SuperCapFillMsg(Can_InfoTypedef *st, uint8_t *txdata, uint8_t list_id)
 {
+//    supercap_tx_data.feedbackRefereePowerLimit = refree_info.Game_Robot_state.chassis_power_limit;
+	supercap_tx_data.feedbackRefereePowerLimit = 60;
+    supercap_tx_data.feedbackRefereeEnergyBuffer = refree_info.Power_Heat_Data.buffer_energy;
+
     memcpy(txdata, &supercap_tx_data, sizeof(supercap_tx_data));
 }
 
@@ -56,10 +60,7 @@ void SuperCapInit(void)
         .rxheader_id = 0x097, // 接收ID
     };
 
-    supercap_tx_data.feedbackRefereePowerLimit = 60;
-    supercap_tx_data.feedbackRefereeEnergyBuffer = refree_info.Power_Heat_Data.buffer_energy;
     supercap_tx_data.enableDCDC = 1;
-
     SuperCapRegist(init);
 }
 

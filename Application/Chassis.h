@@ -21,7 +21,9 @@ typedef struct
 {
     float vx;
     float vy;
-    float omega_z; //底盘输入的角速度(弧度)
+
+    float omega_z;       //底盘小陀螺时的角速度(rad/s)
+    float omega_fllow;   //底盘跟随时的角速度  (rad/s)
     chassis_mode_e mode;
 }__attribute__((__packed__))Chassis_CmdTypedef;
 

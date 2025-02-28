@@ -162,6 +162,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 	else if(huart->Instance == USART6)
 	{
 		HAL_UART_DMAStop(&huart6);
+
 		referee_rx_len = Size;
 		RefereeSolve(referee_rx_buf);
 		memset(referee_rx_buf, 0, REFEREE_RXBUFF_SIZE);
@@ -199,6 +200,25 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 
 	else if(huart->Instance == USART3)
 	{
-		RemoteRestart();
+		if(__HAL_UART_GET_FLAG(huart, UART_FLAG_NE))//噪声错误标志位
+		{
+			__HAL_UART_CLEAR_NEFLAG(huart);//清除
+		}
+		if(__HAL_UART_GET_FLAG(huart, UART_FLAG_FE))
+		{
+			 __HAL_UART_CLEAR_FEFLAG(huart);
+		}
+		if (__HAL_UART_GET_FLAG(huart, UART_FLAG_PE))
+		{
+			__HAL_UART_CLEAR_PEFLAG(huart);// 清除奇偶校验错误标志位
+		}
+		if (__HAL_UART_GET_FLAG(huart, UART_FLAG_ORE)) // 溢出错误标志位
+		{
+			__HAL_UART_CLEAR_OREFLAG(huart);
+		}
+
+		// 重新启动串口接收（如果需要）
+		HAL_UARTEx_ReceiveToIdle_DMA(&huart1, referee_pic_rx_buf, REFEREE_PICBUFF_SIZE);
+		__HAL_DMA_DISABLE_IT(&hdma_usart1_rx,DMA_IT_HT);
 	}
 }
