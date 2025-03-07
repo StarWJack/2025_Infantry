@@ -131,7 +131,7 @@ void CanCbkHandle(CAN_HandleTypeDef *hcan)
 	}
 #endif
 }
-
+//回调函数
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
 	CanCbkHandle(hcan);

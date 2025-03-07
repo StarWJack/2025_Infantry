@@ -127,7 +127,6 @@ uint16_t Get_CRC16_Check_Sum(uint8_t* pchMessage,uint32_t dwLength, uint16_t wCR
 void Send_Packet_Init(send_packet_t *send_packet)
 {
      send_packet->header = 0x5A;
-     send_packet->detect_color = DETECT_COLOR;
      send_packet->task_mode = TASK_MODE;
      send_packet->reset_tracker = 0;
      send_packet->is_play = 1;

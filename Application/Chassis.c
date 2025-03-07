@@ -6,6 +6,7 @@
 #include "Control.h"
 
 
+
 osThreadId_t chassis_task_handel;
 Chassis_TypeDef chassis;
 Chassis_CmdTypedef chassis_cmd;
@@ -17,7 +18,7 @@ void ChassisInit (void)
 	osThreadAttr_t task_attr = {
 			.name = "ChassisTask",
 			.stack_size = 128 * 4 ,
-			.priority = (osPriority_t) osPriorityAboveNormal2 ,
+			.priority = (osPriority_t) osPriorityAboveNormal1 ,
 	};
 	chassis_task_handel = osThreadNew (ChassisTask, NULL, &task_attr);
 }
@@ -62,29 +63,52 @@ float ChassisGetOmega (void)
 	v_total = v_total/4;                                        //平均一个3508 ， 单位rpm
 	v_total = v_total * (187/3591.0f) /60;                      // 转子 --> 转轴   rpm-->rps
 	v_total = v_total * WHEEL_RADIUS / CHASSIS_RADIUS; // rps （轮子的线速度 = 底盘的线速度） 单位变换时要调内环PID
-	return v_total;    //滤波
+	return v_total;    //TODO:滤波
 }
 
+
+/*
+ * @brief  	全向轮底盘跟随
+ * @param	底盘四电机结构体指针ID，顺序2-5
+ */
 void ChassisTask (void *arguement)
 {
 	 static float solve[4];
 //	底盘跟随测试
+//	 PID_TypeDef pid_outer = {
+//	 		.Kp = 0.0005,
+//	 		.Ki = 0,
+//	 		.Kd = 0,
+//	 		.Kf = 0,
+//	 		.Output_Max = 1,
+//	 		.Err_sum_Max = 5000
+//	 };
+//
+//	 PID_TypeDef pid_inner = {
+//	 		pid_inner . Kp = 15,
+//	 		pid_inner . Ki = 1,
+//	 		pid_inner . Kd = 0,
+//	 		.Kf = 0,
+//	 		.Output_Max = 0.5,//量程：RPS
+//	 		.Err_sum_Max = 10
+//	 };
+
 	 PID_TypeDef pid_outer = {
-	 		.Kp = 0.001,
-	 		.Ki = 0,
-	 		.Kd = 0,
-	 		.Kf = 0,
-	 		.Output_Max = 1,
-	 		.Err_sum_Max = 5000
+			.Kp = 0.8,
+			.Ki = 0,
+			.Kd = 1,
+			.Kf = 0,
+			.Output_Max = 1,
+			.Err_sum_Max = 5000
 	 };
-	
+
 	 PID_TypeDef pid_inner = {
-	 		pid_inner . Kp = 15,
-	 		pid_inner . Ki = 1,
-	 		pid_inner . Kd = 0,
-	 		.Kf = 0,
-	 		.Output_Max = 0.5,//量程：RPS
-	 		.Err_sum_Max = 10
+			pid_inner . Kp = 15,
+			pid_inner . Ki = 1,
+			pid_inner . Kd = 0,
+			.Kf = 0,
+			.Output_Max = 0.5,//量程：RPS
+			.Err_sum_Max = 10
 	 };
 	
 	 chassis . pid[INNER] = pid_inner;
@@ -112,25 +136,35 @@ void ChassisTask (void *arguement)
 					chassis.target -= 8192.0f;
 			while(chassis.target - chassis.value < -4096)
 					chassis.target += 8192.0f;
-			//双环控制+500死区
-			if( (chassis.target - chassis.value) < 300 && (chassis.target - chassis.value) > -300)
+
+			chassis.error = chassis.target - chassis.value;
+			//双环控制+500死区      有问题
+			if( (chassis.target - chassis.value) < 100 && (chassis.target - chassis.value) > -100)
 			{
-				chassis.output = 0;
+//				chassis.output = 0;//错误，应该平滑降为0,有史
+				chassis.output *=0.1;
+				if(ABS(chassis.output) < 0.1)
+						chassis.output = 0;
+//              同时对PID积分项清零
+//				chassis.pid[INNER].p_out  = 0;
+//				chassis.pid[INNER].i_out  = 0;
+//				chassis.pid[INNER].Output = 0;
 			}
 			else
 			{
 //				//进行PID计算前转换为弧度制，方便计算
-//				chassis.value = chassis.value *2*PI /8192;
-//				chassis.target = chassis.target *2*PI /8192;
+				chassis.value = chassis.value *2*PI /8192;
+				chassis.target = chassis.target *2*PI /8192;
 
 				chassis.output = PID_Position (&chassis . pid[OUTER], chassis.value,chassis.target);
 				chassis.target = chassis . output;
-				chassis.value  = chassis . omega_z_ref;//角速度
-				chassis.output = PID_Increment (&chassis . pid[INNER], chassis.value,chassis.target);
+//
+//				chassis.value  = chassis . omega_z_ref;//角速度,单位要统一
+//				chassis.output = PID_Increment (&chassis . pid[INNER], chassis.value,chassis.target);
 			}
 			//如果不想跟随，注释下面底盘输出即可
-			chassis_cmd.omega_fllow = - chassis . output;
-		}
+//			chassis_cmd.omega_fllow = - chassis . output;
+	}
 		else
 		{
 			chassis_cmd.omega_z = 0;

@@ -4,7 +4,7 @@
 
 #include "main.h"
 
-
+extern uint8_t shoot_test;
 
 extern void ControlTask(void *argument);
 void ControlInit(void);

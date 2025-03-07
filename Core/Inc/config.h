@@ -6,8 +6,8 @@
 #define INFANTRY 1
 
 //-------------------- 控制器 -------------------------
- #define USE_REMOTE    			//若使用遥控器传输数据，取消注释
-//#define USE_KEYBOARD                //若使用键盘传输数据(图传链路)，取消注释
+// #define USE_REMOTE    			//若使用遥控器传输数据，取消注释
+#define USE_KEYBOARD                //若使用键盘传输数据(图传链路)，取消注释
 // #define USE_SUPERCAP  //若使用超级电容，取消注释
 
 //--------------------  电机  -------------------------
@@ -45,6 +45,7 @@
 #define GIMBAL_TASK_PERIOD 1
 #define CANBUS_TASK_PERIOD 1
 #define IMU_TASK_PERIOD 1
+#define UI_TASK_PERIOD 100
 
 
 // 遥控器灵敏度设置
@@ -58,7 +59,7 @@
 // -----------------------------------------------
 // 键盘灵敏度设置
 #define KEYBOARD_YAW_SEN 0.00005f
-#define KEYBOARD_PITCH_SEN 0.00001f
+#define KEYBOARD_PITCH_SEN 0.00005f
 
 
 // 车体数据
@@ -76,7 +77,7 @@
 // #define PITCH_BOUND       (300.0f - 7850.0f)   pitch电机 编码值范围
 // #define PITCH_BOUND       (PI - * PI)    pitch电机 陀螺仪的范围
 
-#define PITCH_LL_BOUND (PI - 0.08)													// pitch轴下界极限， +0.025确保安全，极限实际为PI
+#define PITCH_LL_BOUND (PI - 0.18)													// pitch轴下界极限， +0.025确保安全，极限实际为PI
 #define PITCH_LH_BOUND ((8192.0f - 7850.0f) + 300) * 2 * PI / 8192 + PITCH_LL_BOUND // pitch轴上界极限， 由于走线限制
 // #define PITCH_LW_BOUND  400.0f    //pitch轴可动范围上下界
 #define PITCH_MID 34.0f // pitch轴中间位置
@@ -91,16 +92,16 @@
 // 性能
 //  #define SHOOT_FREQ 15    //射频, hz
 #define SHOOT_FREQ 20 // 射频, hz
-// #define BULLET_V 25     //弹速, m/s
-#define BULLET_V 35			 // 弹速, m/s
+// #define BULLET_V 25     //弹速, m/smotor_list[7]->pid[1].target
+#define BULLET_V 35.5f			 // 弹速, m/s
 #define MOTORSPEED_DIFF 2.0f // 弹速差异，m/s
 #define CALIBRATE 1			 // 弹速校准比率
-#define CHS_SPEED_LMT 2.0f
+//#define CHS_SPEED_LMT 2.5f
 
 #define CHS_SPIN_LMT 0.5 * PI // 底盘自旋速度
 
 // 比赛数据
-#define DETECT_COLOR 0 // 0-red 1-blue
+#define DETECT_COLOR 1 // 0-red 1-blue //gimbal中更新修改
 #define TASK_MODE 0	   // 0-auto 1-aim 2-buff
 
 
@@ -120,5 +121,5 @@ typedef enum
 #endif
 
 // TODO:5、看门狗
-
+//热量限制
 

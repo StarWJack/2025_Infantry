@@ -6,9 +6,10 @@
 
 typedef enum
 {
-	AUTO = 1,//泼水
-	SHOOT = 3,//火控
-	STOP = 2//测试 小拨盘上下发弹
+	AUTO = 1,//云台跟随
+	SHOOT = 3,//手动射击
+	STOP = 2,//停止发射
+	AUTO_SHOOT = 4//自瞄+火控
 } shooter_strategy_e;//开火策略
 
 typedef enum
@@ -38,6 +39,9 @@ typedef struct
 {
 	float yaw_diff;
 	float pitch_diff;
+
+	float yaw;
+	float pitch;
 }__attribute__((__packed__)) Gimbal_Auto;
 
 //extern osMessageQueueId_t gimbal_MQ_handel;

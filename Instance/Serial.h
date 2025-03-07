@@ -57,6 +57,9 @@ typedef struct
 //  float dz;
 
   //o-auto
+  float yaw;
+  float pitch;
+
   float yaw_diff;
   float pitch_diff;
   int fire_advice;

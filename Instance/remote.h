@@ -67,4 +67,6 @@ typedef struct
 extern RC_Ctl_t RC_Ctl;
 extern void RemoteRestart();
 extern void RemoteInit(void);
+extern uint8_t remote_rxbuff[54];
+
 #endif

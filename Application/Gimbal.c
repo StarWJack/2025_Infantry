@@ -10,6 +10,8 @@
 #include "imu.h"
 #include "Serial.h"
 #include "vofa.h"
+#include "control.h"
+#include "referee.h"
 
 osThreadId_t gimbal_task_handel;
 Gimbal_CmdTypedef gimbal_cmd;
@@ -24,7 +26,7 @@ void GimbalInit (void)
 	osThreadAttr_t attr_task = {
 			.name = "GimbalTask",
 			.stack_size = 128 * 4,
-			.priority = (osPriority_t) osPriorityAboveNormal1 ,};
+			.priority = (osPriority_t) osPriorityAboveNormal2 ,};
 	gimbal_task_handel = osThreadNew (GimbalTask, NULL, &attr_task);
 }
 
@@ -58,33 +60,52 @@ void GimbalCtrl (Gimbal_CmdTypedef *st)
 	}
 	else//自瞄
 	{
-		tar_yaw = MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN)  + gimbal_auto.yaw_diff ;
+		if(gimbal_auto.yaw != PI && gimbal_auto.yaw_diff != 0)
+			tar_yaw = gimbal_auto.yaw ;
+		else
+			tar_yaw = MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN);
+
 		while ( tar_yaw > 2*PI )
 			tar_yaw -= 2 * PI;
 		while ( tar_yaw <0 )
 			tar_yaw += 2 * PI;
+
 		MotorSetTar (motor_list[MOTOR_YAW], tar_yaw, ABS);
 
-		tar_pitch = MotorGetVal (motor_list[MOTOR_PITCH], IMU, RAD) + gimbal_auto.pitch_diff ;
+		if(gimbal_auto.pitch != PI && gimbal_auto.pitch_diff != 0)
+			tar_pitch = gimbal_auto.pitch;
+		else
+			tar_pitch = MotorGetVal (motor_list[MOTOR_PITCH], IMU, RAD);
+
 		if(tar_pitch > PITCH_LH_BOUND)
 			tar_pitch = PITCH_LH_BOUND;
 		else if(tar_pitch < PITCH_LL_BOUND)
 			tar_pitch = PITCH_LL_BOUND;
 		MotorSetTar (motor_list[MOTOR_PITCH], tar_pitch, ABS);
 	}
+//test
+
 #endif
 
 #ifdef USE_KEYBOARD
-		if(st -> shooter == AUTO && st -> shoot_advice )//自瞄 -- 云台跟随和火控分开
+		if(st -> shooter == AUTO || st -> shooter == AUTO_SHOOT)//自瞄 -- 云台跟随和火控分开
 		{
-			tar_yaw = MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN)  + gimbal_auto.yaw_diff ;
+			if(gimbal_auto.yaw != PI && gimbal_auto.yaw_diff != 0)
+						tar_yaw = gimbal_auto.yaw ;
+			else
+				tar_yaw = MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN);
+
 			while ( tar_yaw > 2*PI )
 				tar_yaw -= 2 * PI;
 			while ( tar_yaw <0 )
 				tar_yaw += 2 * PI;
 			MotorSetTar (motor_list[MOTOR_YAW], tar_yaw, ABS);
 
-			tar_pitch = MotorGetVal (motor_list[MOTOR_PITCH], IMU, RAD) + gimbal_auto.pitch_diff ;
+			if(gimbal_auto.pitch != PI && gimbal_auto.pitch_diff != 0)
+				tar_pitch = gimbal_auto.pitch;
+			else
+				tar_pitch = MotorGetVal (motor_list[MOTOR_PITCH], IMU, RAD);
+
 			if(tar_pitch > PITCH_LH_BOUND)
 				tar_pitch = PITCH_LH_BOUND;
 			else if(tar_pitch < PITCH_LL_BOUND)
@@ -127,6 +148,9 @@ void ShooterCtrl (Gimbal_CmdTypedef *st)
 	{//固定射速，待添加遥控器遥杆控制   
 		MotorSetTar (motor_list[MOTOR_SHT_L], BULLET_V, ABS);
 		MotorSetTar (motor_list[MOTOR_SHT_R], - BULLET_V, ABS);
+//		MotorSetTar (motor_list[MOTOR_SHT_L], 0, ABS);
+//		MotorSetTar (motor_list[MOTOR_SHT_R], 0, ABS);
+
 	}
 	else
 	{
@@ -159,23 +183,49 @@ void ShooterCtrl (Gimbal_CmdTypedef *st)
 			tar = -tar;
 		}
 		#endif
-		
+//热量限制
+		if(  refree_info.Power_Heat_Data.shooter_17mm_1_barrel_heat > (refree_info.Game_Robot_state.shooter_barrel_heat_limit * 0.9))
+			MotorSetTar (motor_list[MOTOR_AMMO], 0, ABS);
+		else
 		MotorSetTar (motor_list[MOTOR_AMMO], tar, ABS);
 	}
 //自瞄+火控
+#ifdef USE_KEYBOARD
+	else if (st -> shoot_advice && st -> shooter == AUTO_SHOOT)
+#endif
+#ifdef USE_REMOTE
 	else if ( st -> shooter == AUTO && st -> shoot_advice)
+#endif
 	{
-		float tar = 1430 * 2 * PI /36;  //固定值
+		float tar = 1100 * 2 * PI /36;  //固定值
 		if(tar > 0)
 		{
 			tar = -tar;
 		}
 		MotorSetTar (motor_list[MOTOR_SHT_L], BULLET_V, ABS);
 		MotorSetTar (motor_list[MOTOR_SHT_R], - BULLET_V, ABS);
-
-		MotorSetTar (motor_list[MOTOR_AMMO], tar, ABS);
+//热量限制
+		if(  refree_info.Power_Heat_Data.shooter_17mm_1_barrel_heat > (refree_info.Game_Robot_state.shooter_barrel_heat_limit * 0.9))
+			MotorSetTar (motor_list[MOTOR_AMMO], 0, ABS);
+		else
+			MotorSetTar (motor_list[MOTOR_AMMO], tar, ABS);
 	}
-
+	else
+	{
+		MotorSetTar (motor_list[MOTOR_AMMO], 0, ABS);
+	}
+//测试
+//	if(shoot_test == 1)
+//	{
+//		MotorSetTar (motor_list[MOTOR_SHT_L], BULLET_V, ABS);
+//		MotorSetTar (motor_list[MOTOR_SHT_R], - BULLET_V, ABS);
+//		float tar = st -> v_shoot * 2 * PI /36; // 实际弹频 = v_shoot/36（拨弹盘一圈）/10(任务周期) *8  k/s
+//		if(tar > 0)
+//		{
+//			tar = -tar;
+//		}
+//		MotorSetTar (motor_list[MOTOR_AMMO], tar, ABS);
+//	}
 }
 
 
@@ -195,17 +245,21 @@ void GimbalTask (void *argument)
 
 	for ( ;; )
 	{
+//发送IMU数据
 		aim_packet_to_nuc.roll = imu_list[0]->angle[1];
 	    aim_packet_to_nuc.yaw = imu_list[0]->angle[0];
 	    aim_packet_to_nuc.pitch = - imu_list[0]->angle[2];
-//限幅
-	    if(aim_packet_from_nuc.yaw_diff < - PI/2)
-	    	aim_packet_from_nuc.yaw_diff =  - PI/2;
-	    else if(aim_packet_from_nuc.yaw_diff > PI/2 )
-	    	aim_packet_from_nuc.yaw_diff = PI/2;
+//识别颜色
+	    if(refree_info.Game_Robot_state.robot_id > 0 && refree_info.Game_Robot_state.robot_id < 12)
+	    	aim_packet_to_nuc.detect_color = 1;//0 -- red , 1 -- blue
+	    else if(refree_info.Game_Robot_state.robot_id > 100 && refree_info.Game_Robot_state.robot_id < 112)
+	    	aim_packet_to_nuc.detect_color = 0;
 //赋值
-		gimbal_auto.yaw_diff = aim_packet_from_nuc.yaw_diff;
-		gimbal_auto.pitch_diff = - aim_packet_from_nuc.pitch_diff;//（方向相反）、
+		gimbal_auto.yaw = aim_packet_from_nuc.yaw + PI;//0 -- 2*PI
+		gimbal_auto.pitch = aim_packet_from_nuc.pitch + PI;//
+
+		gimbal_auto.yaw_diff = aim_packet_from_nuc.yaw_diff;//0 -- 2*PI
+		gimbal_auto.pitch_diff = aim_packet_from_nuc.pitch_diff;//
 //火控标志位
 	    if(aim_packet_from_nuc.fire_advice)
 	    {
@@ -218,12 +272,7 @@ void GimbalTask (void *argument)
 //云台，射击控制逻辑
 		GimbalCtrl (&gimbal_cmd);
 		ShooterCtrl (&gimbal_cmd);
-		
-//		vofa_demo((MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN)  + gimbal_auto.yaw_diff),
-//						   MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN),
-//						   (MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN)  + gimbal_auto.yaw_diff),
-//						   MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN),
-//						   1,1);
+
 
 		time = osKernelGetTickCount ();
 		osDelayUntil (time + GIMBAL_TASK_PERIOD);

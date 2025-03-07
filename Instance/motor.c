@@ -10,10 +10,12 @@
 #include "Chassis.h"
 #include "Gimbal.h"
 #include "ChassisPowerCtrl.h"
+//#include "Gimbal.h"
 
 
 Motor_TypeDef *motor_list[MOTOR_NUM];
 float data_view[10];
+uint32_t calu_auto;
 
 float MotorProximity (float tar, float ref)
 {
@@ -156,9 +158,9 @@ void my_MotorCalc (void)
 	motor_list[MOTOR_YAW] -> output_Position = PID_Position (&(motor_list[MOTOR_YAW] -> pid[ANGLE]), ref, tar);
 	motor_list[MOTOR_YAW] -> output = motor_list[MOTOR_YAW] -> output_Position;
 
-	tar = motor_list[MOTOR_YAW] -> output_Position + (2*PI *motor_list[MOTOR_YAW] -> feed_fwd);//底盘跟随时的角速度（类似前馈） rad/s
+	tar = motor_list[MOTOR_YAW] -> output_Position + (2*PI *motor_list[MOTOR_YAW] -> feed_fwd);//底盘跟随时的角速度（力补偿） rad/s
 
-//	tar = motor_list[MOTOR_YAW] -> output_Position;//底盘跟随时的角速度（类似前馈） rad/s
+//	tar = motor_list[MOTOR_YAW] -> output_Position;
 
 	ref = MotorGetVal (motor_list[MOTOR_YAW], MOTORSPEED, RAD);
 
@@ -166,6 +168,9 @@ void my_MotorCalc (void)
 
 	motor_list[MOTOR_YAW] -> output = PID_Increment (&(motor_list[MOTOR_YAW] -> pid[SPEED]), ref, tar) ;
 	motor_list[MOTOR_YAW] -> output += motor_list[MOTOR_YAW] -> pid[SPEED].Output_feed;
+
+
+
 
 //单增量式
 //	  tar = motor_list[MOTOR_YAW] -> target;
@@ -397,6 +402,7 @@ void MotorRegist (Motor_InitTypedef st)
 
 void MotorInit ()
 {
+//	自瞄
 	PID_TypeDef pid_outer = {
 			.Kp = 12,  //大小应与遥控器输入量一同调节，p太大应引起目标点抖动
 			.Ki = 0,
@@ -405,7 +411,7 @@ void MotorInit ()
 			.Output_Max = 7,
 			.Err_sum_Max = 100,
 	};
-	
+
 	PID_TypeDef pid_inner = {
 //			pid_inner . Kp = 4050,  //2000-4000  ，3000-4000归中较慢
 			pid_inner . Kp = 3800,
@@ -414,7 +420,25 @@ void MotorInit ()
 			pid_inner . Kf = 1,
 			pid_inner . Output_Max = 15000, //5000-15000最合适
 	};
-	
+//操作手
+//	PID_TypeDef pid_outer = {
+//			.Kp = 5,  //大小应与遥控器输入量一同调节，p太大应引起目标点抖动
+//			.Ki = 0,
+//			.Kd = 0,
+//			.Kf = 0,
+//			.Output_Max = 7,
+//			.Err_sum_Max = 100,
+//	};
+//
+//	PID_TypeDef pid_inner = {
+////			pid_inner . Kp = 4050,  //2000-4000  ，3000-4000归中较慢
+//			pid_inner . Kp = 3800,
+//			pid_inner . Ki = 8,   //太小会回弹
+//			pid_inner . Kd = 0,
+//			pid_inner . Kf = 1,
+//			pid_inner . Output_Max = 16000, //5000-15000最合适
+//	};
+
 	Motor_InitTypedef init = {
 			.can_id = 1,
 			.hcan = &hcan1,
@@ -489,10 +513,15 @@ void MotorInit ()
 	MotorRegist (init);
 	
 	//shooter init
-	pid_inner . Kp = 500;
-	pid_inner . Ki = 10;
-	pid_inner . Kd = 50;
+	pid_inner . Kp = 400;
+	pid_inner . Ki = 15;
+	pid_inner . Kd = 300;
 	pid_inner . Kf = 0;
+
+//	pid_inner . Kp = 500;
+//	pid_inner . Ki = 10;
+//	pid_inner . Kd = 50;
+//	pid_inner . Kf = 0;
 	 pid_inner . Output_Max = 12000;
 	init . pid_inner = pid_inner;
 	init . hcan = &hcan2;

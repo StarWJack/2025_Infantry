@@ -37,8 +37,11 @@ void RemoteRestart()//重启串口和DMA，针对于数据错位和无法进入�
 	__HAL_DMA_CLEAR_FLAG(&hdma_usart3_rx,DMA_IT_TC);
     __HAL_RCC_USART3_CLK_ENABLE();
     __HAL_RCC_DMA1_CLK_ENABLE();
+	
     memset(&RC_Ctl, 0, sizeof(RC_Ctl));
     HAL_UARTEx_ReceiveToIdle_DMA(&huart3, remote_rxbuff, REMOTE_RXBUFF_SIZE);
+//	__HAL_DMA_DISABLE_IT(&hdma_usart3_rx,DMA_IT_HT);
+
 }
 
 
@@ -84,17 +87,18 @@ void RemoteSolve()
 	    RemoteRestart();
 	    return ;
 	}
-//	#ifdef USE_REMOTE_KEYBORAD
-//	    memcpy(&RC_Ctl.keyboard, remote_rxbuff +6, 8);
-//	    RC_Ctl.keyboard.W = remote_rxbuff[14] & 0x80;
-//	    RC_Ctl.keyboard.S = remote_rxbuff[14] & 0x40;
-//	    RC_Ctl.keyboard.A = remote_rxbuff[14] & 0x20;
-//	    RC_Ctl.keyboard.D = remote_rxbuff[14] & 0x10;
-//	    RC_Ctl.keyboard.Q = remote_rxbuff[14] & 0x08;
-//	    RC_Ctl.keyboard.E = remote_rxbuff[14] & 0x04;
-//	    RC_Ctl.keyboard.SHIFT = remote_rxbuff[14] & 0x02;
-//	    RC_Ctl.keyboard.CTRL = remote_rxbuff[14] & 0x01;
-//	#endif
+	
+	#ifdef USE_REMOTE_KEYBORAD
+	    memcpy(&RC_Ctl.keyboard, remote_rxbuff +6, 8);
+	    RC_Ctl.keyboard.W = remote_rxbuff[14] & 0x80;
+	    RC_Ctl.keyboard.S = remote_rxbuff[14] & 0x40;
+	    RC_Ctl.keyboard.A = remote_rxbuff[14] & 0x20;
+	    RC_Ctl.keyboard.D = remote_rxbuff[14] & 0x10;
+	    RC_Ctl.keyboard.Q = remote_rxbuff[14] & 0x08;
+	    RC_Ctl.keyboard.E = remote_rxbuff[14] & 0x04;
+	    RC_Ctl.keyboard.SHIFT = remote_rxbuff[14] & 0x02;
+	    RC_Ctl.keyboard.CTRL = remote_rxbuff[14] & 0x01;
+	#endif
 
 }
 
@@ -153,12 +157,14 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 		HAL_UARTEx_ReceiveToIdle_DMA(&huart1, referee_pic_rx_buf, REFEREE_PICBUFF_SIZE);
 		__HAL_DMA_DISABLE_IT(&hdma_usart1_rx, DMA_IT_HT);
 	}
-	else if(huart->Instance == USART3)
+
+	else if(huart->Instance == USART3)//当遥控器接收不到时，缓冲数组接收的数据帧头有错误，并非接收不到问题
 	{
 		RemoteSolve();
         HAL_UARTEx_ReceiveToIdle_DMA(&huart3, remote_rxbuff, REMOTE_RXBUFF_SIZE);
-
+        __HAL_DMA_DISABLE_IT(&hdma_usart3_rx,DMA_IT_HT);
 	}
+
 	else if(huart->Instance == USART6)
 	{
 		HAL_UART_DMAStop(&huart6);
