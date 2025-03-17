@@ -4,6 +4,7 @@
  * @history
  * 版本			作者			编写日期
  * v1.0.0		姚启杰		2023/4/1	
+ * v1.1.0       范竣杰      2025/3/10    适配裁判系统v1.7.0
  */
 #ifndef _REFEREE_H_
 #define _REFEREE_H_
@@ -32,7 +33,7 @@ typedef enum
 	ID_game_buff  =0x0005,//buff
 
 	ID_event_data  = 0x0101,//场地事件数据
-	ID_supply_projectile_action = 0x0102,//场地补给站动作标识数据
+
 	ID_referee_warn = 0x0104,//裁判系统警告数据
 	ID_dart_shoot_info =0x0105  , //飞镖发射
 
@@ -40,7 +41,7 @@ typedef enum
 	ID_power_heat_data = 0x0202,//实时功率热量数据
 	ID_game_robot_pos = 0x0203,//机器人位置数据
 	ID_buff_musk = 0x0204,//机器人增益数据
-	ID_aerial_robot_energy = 0x0205,//空中机器人能量状态数据
+
 	ID_robot_hurt = 0x0206,//伤害状态数据
 	ID_shoot_data = 0x0207,//实时射击数据
 	ID_bullet_remaining  = 0x0208,//剩余发射数
@@ -104,14 +105,14 @@ typedef struct
 	uint8_t winner;
 }__attribute__((packed)) ext_game_result_t;
 
-/* ID: 0x0003  Byte:  32    比赛机器人血量数据 */
+/* ID: 0x0003  Byte:  32    比赛机器人血量数据 */ 
 typedef struct
 {
  uint16_t red_1_robot_HP;
  uint16_t red_2_robot_HP;
  uint16_t red_3_robot_HP;
  uint16_t red_4_robot_HP;
- uint16_t red_5_robot_HP;
+ uint16_t red_5_robot_HP;//联盟赛为保留位
  uint16_t red_7_robot_HP;
  uint16_t red_outpost_HP;
  uint16_t red_base_HP;
@@ -119,7 +120,7 @@ typedef struct
  uint16_t blue_2_robot_HP;
  uint16_t blue_3_robot_HP;
  uint16_t blue_4_robot_HP;
- uint16_t blue_5_robot_HP;
+ uint16_t blue_5_robot_HP;//联盟赛为保留位
  uint16_t blue_7_robot_HP;
  uint16_t blue_outpost_HP;
  uint16_t blue_base_HP;
@@ -128,18 +129,9 @@ typedef struct
 /* ID: 0x0101  Byte:  4    场地事件数据 */
 typedef struct
 {
-	uint32_t event_data;
+	uint32_t event_data; //bit 21-22：中心增益点的占领状态，0为未被占领，1为被己方占领，2为被对方占领，3为被双方占领（仅RMUL适用）
 }__attribute__((packed)) ext_event_data_t;
 
-
-/* ID: 0x0102  Byte:  4    场地补给站动作标识数据 */
-typedef struct
-{
-	uint8_t reserved;
-	uint8_t supply_robot_id;
-	uint8_t supply_projectile_step;
-	uint8_t supply_projectile_num;
-}__attribute__((packed)) ext_supply_projectile_action_t;
 
 /* ID: 0x0104  Byte: 2   裁判系统警告信息 */
 typedef struct
@@ -165,20 +157,20 @@ typedef struct
 	uint16_t maximum_HP;
 	uint16_t shooter_barrel_cooling_value;//机器人枪口热量每秒冷却值
 
-	uint16_t shooter_barrel_heat_limit; //枪口热量上限
+	uint16_t shooter_barrel_heat_limit; //枪口热量上限   
 	uint16_t chassis_power_limit;       //底盘功率上限
 	
 	uint8_t power_management_gimbal_output : 1;
 	uint8_t power_management_chassis_output : 1;
-	uint8_t power_management_shooter_output : 1;
+	uint8_t power_management_shooter_output : 1;//可用上
 }__attribute__((packed)) ext_game_robot_state_t;
 
 /* ID: 0X0202  Byte: 16    实时功率热量数据 */
 typedef struct
 {
-	uint16_t chassis_voltage;
-	uint16_t chassis_current;
-	float chassis_power;
+	uint16_t reserved_1; //改为保留位
+	uint16_t reserved_2; //改为保留位
+	float    reserved_3; //改为保留位
 	uint16_t buffer_energy;
 	uint16_t shooter_17mm_1_barrel_heat;
 	uint16_t shooter_17mm_2_barrel_heat;
@@ -193,7 +185,7 @@ typedef struct
 	float angle;
 }__attribute__((packed)) ext_game_robot_pos_t;
 
-/* ID: 0x0204  Byte:  1    机器人增益数据 */
+/* ID: 0x0204  Byte:  7    机器人增益数据 */
 typedef struct
 {
 	uint8_t recovery_buff;
@@ -201,14 +193,8 @@ typedef struct
 	uint8_t defence_buff;
 	uint8_t vulnerability_buff;
 	uint16_t attack_buff;
+	uint8_t remaining_energy; 
 }__attribute__((packed)) ext_buff_musk_t;
-
-/* ID: 0x0205  Byte:  1    空中机器人能量状态数据 */
-typedef struct
-{
-  	uint8_t airforce_status;
- 	uint8_t time_remain;
-}__attribute__((packed)) aerial_robot_energy_t;
 
 /* ID: 0x0206  Byte:  1    伤害状态数据 */
 typedef struct
@@ -294,7 +280,6 @@ typedef struct{
 	game_robot_HP_t 	Game_Robot_HP;			// 0x0003         机器人血量数据
 
 	ext_event_data_t			Event_Data;					// 0x0101         场地事件数据
-	ext_supply_projectile_action_t	Supply_Projectile_Action;		// 0x0102 补给站动作标识
 	ext_referee_warning_t		Referee_Warning;		// 0x0104         裁判警告信息
 	dart_info_t	dart_info;// 0x0105         飞镖发射口倒计时
 
@@ -302,7 +287,6 @@ typedef struct{
 	ext_power_heat_data_t	Power_Heat_Data;		// 0x0202         实时功率热量数据
 	ext_game_robot_pos_t	Game_Robot_Pos;			// 0x0203         机器人位置
 	ext_buff_musk_t		    Buff_Musk;						// 0x0204     机器人增益
-	aerial_robot_energy_t	Aerial_Robot_Energy;// 0x0205             空中机器人能量状态
 	ext_robot_hurt_t		Robot_Hurt;					// 0x0206         伤害状态
 	ext_shoot_data_t		Shoot_Data;					// 0x0207         实时射击信息(射频  射速  子弹信息)
 	ext_bullet_remaining_t	bullet_remaining;		// 0x0208	        子弹剩余发射数

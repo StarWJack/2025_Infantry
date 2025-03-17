@@ -64,9 +64,6 @@ void RefereeSolve(uint8_t *data)
 	case ID_event_data:
 			memcpy(&(refree_info.Event_Data), (data + Offset_data), LEN_event_data);
 			break;
-	case ID_supply_projectile_action:
-			memcpy(&(refree_info.Supply_Projectile_Action), (data + Offset_data), LEN_supply_projectile_action);
-			break;
 	case ID_referee_warn:
 			memcpy(&(refree_info.Referee_Warning), (data + Offset_data), LEN_referee_warn);
 			break;
@@ -87,9 +84,6 @@ void RefereeSolve(uint8_t *data)
 	case ID_buff_musk:
 			memcpy(&(refree_info.Buff_Musk), (data + Offset_data), LEN_buff_musk);
 			break;
-	case ID_aerial_robot_energy:
-			memcpy(&(refree_info.Aerial_Robot_Energy), (data + Offset_data), LEN_aerial_robot_energy);
-			break;
 	case ID_robot_hurt:
 			memcpy(&(refree_info.Game_Status), (data + Offset_data), LEN_robot_hurt);
 			break;
@@ -107,11 +101,13 @@ void RefereeSolve(uint8_t *data)
 			break;
 
 	//0x300
+#ifndef USE_REMOTE_KEYBORAD
 	case ID_keyboard_information:
 			memcpy(&(RC_Ctl.keyboard), (data + Offset_data), LEN_keyboard_information);
 			break;
+#endif
 	}
-//有问题
+
 	if(data[offset_frame_tail+2] == 0xA5)
 		RefereeSolve(data +offset_frame_tail +2);
 	return;
