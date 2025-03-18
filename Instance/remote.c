@@ -87,19 +87,33 @@ void RemoteSolve()
 	    RemoteRestart();
 	    return ;
 	}
-	
+
 	#ifdef USE_REMOTE_KEYBORAD
-	    memcpy(&RC_Ctl.keyboard, remote_rxbuff +6, 8);
-	    RC_Ctl.keyboard.W = remote_rxbuff[14] & 0x80;
-	    RC_Ctl.keyboard.S = remote_rxbuff[14] & 0x40;
-	    RC_Ctl.keyboard.A = remote_rxbuff[14] & 0x20;
-	    RC_Ctl.keyboard.D = remote_rxbuff[14] & 0x10;
-	    RC_Ctl.keyboard.Q = remote_rxbuff[14] & 0x08;
-	    RC_Ctl.keyboard.E = remote_rxbuff[14] & 0x04;
-	    RC_Ctl.keyboard.SHIFT = remote_rxbuff[14] & 0x02;
-	    RC_Ctl.keyboard.CTRL = remote_rxbuff[14] & 0x01;
+		RC_Ctl.keyboard.x = (remote_rxbuff[6] | remote_rxbuff[7] << 8);
+		RC_Ctl.keyboard.y = (remote_rxbuff[8] | remote_rxbuff[9] << 8);
+		RC_Ctl.keyboard.l =  remote_rxbuff[12];
+		RC_Ctl.keyboard.r =  remote_rxbuff[13];
+
+	    RC_Ctl.keyboard.W = (remote_rxbuff[14] & 0x01)?1:0;
+	    RC_Ctl.keyboard.S = (remote_rxbuff[14] & 0x02)?1:0;
+	    RC_Ctl.keyboard.A = (remote_rxbuff[14] & 0x04)?1:0;
+	    RC_Ctl.keyboard.D = (remote_rxbuff[14] & 0x08)?1:0;
+	    RC_Ctl.keyboard.SHIFT = (remote_rxbuff[14] & 0x10)?1:0;
+	    RC_Ctl.keyboard.CTRL  = (remote_rxbuff[14] & 0x20)?1:0;
+	    RC_Ctl.keyboard.Q = (remote_rxbuff[14] & 0x40)?1:0;
+	    RC_Ctl.keyboard.E = (remote_rxbuff[14] & 0x80)?1:0;
+
+		RC_Ctl.keyboard.R = (remote_rxbuff[15] & 0x01)?1:0;
+		RC_Ctl.keyboard.F = (remote_rxbuff[15] & 0x02)?1:0;
+		RC_Ctl.keyboard.G = (remote_rxbuff[15] & 0x04)?1:0;
+		RC_Ctl.keyboard.Z = (remote_rxbuff[15] & 0x08)?1:0;
+		RC_Ctl.keyboard.X = (remote_rxbuff[15] & 0x10)?1:0;
+		RC_Ctl.keyboard.C = (remote_rxbuff[15] & 0x20)?1:0;
+		RC_Ctl.keyboard.V = (remote_rxbuff[15] & 0x40)?1:0;
+		RC_Ctl.keyboard.B = (remote_rxbuff[15] & 0x80)?1:0;
 	#endif
 
+	
 }
 
 //判断遥控器数据是否出错，

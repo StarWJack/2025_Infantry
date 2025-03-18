@@ -60,7 +60,7 @@ typedef struct
        uint16_t B : 1;
 
        uint16_t reserved;
-    } __attribute__((packed))keyboard;
+    } __attribute__((packed))keyboard;//适配图传
 
 }RC_Ctl_t;
 

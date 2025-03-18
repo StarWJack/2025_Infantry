@@ -28,8 +28,8 @@ typedef struct __attribute__((packed))
     uint8_t enableDCDC : 1;               // 1位位域，使能DCDC
     uint8_t systemRestart : 1;            // 1位位域，系统重启
     uint8_t resv0 : 6;                    //  6 位的位域，保留位，未使用
-    uint16_t feedbackRefereePowerLimit;   // 16 位无符号整数，用于表示反馈裁判的功率限制
-    uint16_t feedbackRefereeEnergyBuffer; // 16 位无符号整数，用于表示反馈裁判的能量缓冲
+    uint16_t feedbackRefereePowerLimit;   // 16 位无符号整数，用于表示裁判系统的功率限制
+    uint16_t feedbackRefereeEnergyBuffer; // 16 位无符号整数，用于表示裁判系统的能量缓冲
     uint8_t resv1[3];                     // 3 个字节的保留位，未使用
 } supercap_tx_data_t;
 
