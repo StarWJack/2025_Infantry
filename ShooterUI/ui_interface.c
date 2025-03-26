@@ -2,11 +2,11 @@
 #include <string.h>
 #include "main.h"
 #include "ui_interface.h"
+#include "cmsis_os2.h"
 
 uint8_t seq = 0;
-int ui_self_id = 103;
+int ui_self_id = 3;
 //为了使消息能够发送给裁判系统，必须要自定义ui_self_id变量（该变量也可以使用其他代码从裁判系统读取后由程序修改）
-
 
 //void print_message(const uint8_t *message, const int length) {
 //
@@ -16,6 +16,11 @@ int ui_self_id = 103;
 //    }
 //    printf("\n\n");
 //
+//}
+
+//void message_send(const uint8_t *pData, uint16_t Size)
+//{
+//    HAL_UART_Transmit_DMA(&huart6, pData, Size);
 //}
 
 const unsigned char CRC8_TAB_UI[256] = {
