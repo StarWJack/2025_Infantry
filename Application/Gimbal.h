@@ -9,22 +9,18 @@ typedef enum
 	AUTO = 1,//云台跟随
 	SHOOT = 3,//手动射击
 	STOP = 2,//停止发射
-	AUTO_SHOOT = 4//自瞄+火控
+	AUTO_SHOOT = 4,//自瞄+手打
+	AUTO_FIRE = 5  //自瞄+火控
 } shooter_strategy_e;//开火策略
 
-typedef enum
-{
-	SHOOTER_STOP = 2,
-	SHOOTER_NORMAL = 0,  //正转
-	SHOOTER_REVERSE = 1  //反转
-} shooter_state_e;
 
 typedef struct
 {
 	shooter_strategy_e shooter;
-	shooter_state_e shooter_state;
 	uint8_t friction_state;//摩擦轮状态:0-关闭，1-开启
 	uint8_t shoot_advice;
+	uint8_t mouse_flag;//优化操作手界面超调现象
+	uint8_t spin_flag;
 
 	float pitch;
 	float yaw;
@@ -44,7 +40,6 @@ typedef struct
 	float pitch;
 }__attribute__((__packed__)) Gimbal_Auto;
 
-//extern osMessageQueueId_t gimbal_MQ_handel;
 extern osThreadId_t gimbal_task_handel;
 extern Gimbal_CmdTypedef gimbal_cmd;
 extern Gimbal_Auto gimbal_auto;
