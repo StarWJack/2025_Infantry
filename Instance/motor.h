@@ -26,6 +26,12 @@ typedef enum
     RAD
 }DataType_e;
 
+typedef struct
+{
+    uint16_t shoot_count;
+    uint16_t shoot_num;
+}SHOOT_CLA;
+
 typedef struct 
 {
     //TODO: add watchdog
@@ -75,21 +81,15 @@ typedef struct
     float output_max;
     float *source;      //source of ref in outer pid loop, valid only when pid_type='IMU'  即读取
 }Motor_InitTypedef;
-extern float data_view[10] ;
 
-
-extern void MotorOptLmt(Motor_TypeDef *motor, float lmt);
 extern void MotorStatusChange(Motor_TypeDef *motor, PID_Type_e newtype, float *source);
 extern void MotorCalc(void);
-extern void my_MotorCalc (void);
+
 extern void MotorInit(void);
 extern void MotorSetTar(Motor_TypeDef *motor, float val, ValSet_Type_e type);
-//extern void MotorSetTar(Motor_TypeDef *motor, float tar, uint8_t style);
 extern float MotorGetVal(Motor_TypeDef *motor,MOTOR_Feedback_e feedback,DataType_e type);
-//extern float MotorGetVal(Motor_TypeDef *motor, uint8_t style);
-//extern uint8_t MotorSetZeroPoint(Motor_TypeDef *motor);
 extern void MotorStop(Motor_TypeDef *motor);
 extern void MotorRestart(Motor_TypeDef *motor);
-extern void MotorAllEnabled(void);
+void Chassis_PowerCtrl(void);
 extern Motor_TypeDef *motor_list[];
 #endif

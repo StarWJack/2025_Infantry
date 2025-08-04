@@ -68,5 +68,7 @@ extern RC_Ctl_t RC_Ctl;
 extern void RemoteRestart();
 extern void RemoteInit(void);
 extern uint8_t remote_rxbuff[54];
+extern uint8_t remote_rest_flag;
+extern uint8_t remote_error_flag;
 
 #endif

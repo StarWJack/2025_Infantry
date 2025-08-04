@@ -100,6 +100,7 @@ void Pack_And_Send_Data_ROS2(send_packet_t *send_packet)
     uint8_t tmp[len];
     memcpy(tmp, send_packet,len-2);
     uint16_t w_crc = Get_CRC16_Check_Sum(tmp, len - 2, 0xFFFF);
+
     tmp[len - 2] = (uint8_t) (w_crc & 0x00ff);
     tmp[len - 1] = (uint8_t) ((w_crc >> 8) & 0x00ff);
 	CDC_SendFeed(tmp, len);
@@ -136,19 +137,4 @@ void Send_Packet_Init(send_packet_t *send_packet)
      send_packet-> yaw = imu_list[0]->angle[0];
 }
 
-//void Send_Packet_Init(send_packet_t *send_packet)
-//{
-//
-//    send_packet->header = 0x5A;
-//    send_packet->robot_color = 0;
-//    send_packet->reserve = 0;
-//
-//    send_packet->roll = 0;
-//    send_packet->pitch = 0;
-//    send_packet-> yaw = 0;
-//
-//    send_packet-> aim_x = 0;
-//    send_packet-> aim_y = 0;
-//    send_packet-> aim_z = 0;
-//    send_packet-> checksum = 0;
-//}
+

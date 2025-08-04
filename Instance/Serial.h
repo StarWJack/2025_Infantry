@@ -42,19 +42,6 @@ typedef struct
   uint8_t state : 2;       // 0-untracking 1-tracking-aim 2-tracking-buff
   uint8_t id : 3;          // aim: 0-outpost 6-guard 7-base
   uint8_t armors_num : 3;  // 2-balance 3-outpost 4-normal
-  //state + id + armors_num = 8 bits(1 byte)
-//  float x;                 // aim: robot-center || buff: rune-center
-//  float y;                 // aim: robot-center || buff: rune-center
-//  float z;                 // aim: robot-center || buff: rune-center
-//  float yaw;               // aim: robot-yaw || buff: rune-theta
-//  // spd = a*sin(w*t)+b || spd > 0 ==> clockwise
-//  float vx;  // aim: robot-vx || buff: rune spin speed param - a
-//  float vy;  // aim: robot-vy || buff: rune spin speed param - b
-//  float vz;  // aim: robot-vz || buff: rune spin speed param - w
-//  float v_yaw;
-//  float r1;
-//  float r2;
-//  float dz;
 
   //o-auto
   float yaw;
@@ -64,49 +51,8 @@ typedef struct
   float pitch_diff;
   int fire_advice;
 
-//  uint32_t cap_timestamp;  // (ms) frame capture time
-//  uint16_t t_offset;       // (ms) speed t offset
-
   uint16_t checksum ;
 } __attribute__((packed)) receive_packet_t;
-
-
-//chenjun - able
-// typedef struct ReceivePacket{
-// 	uint8_t header;//0xA5
-// 	uint8_t tracking : 1;//是否识别到
-//    uint8_t id: 3;
-//    uint8_t armor_num : 3;
-//    uint8_t reserved : 1;
-// 	float x;
-// 	float y;
-// 	float z;
-// 	float yaw;
-// 	float vx;
-// 	float vy;
-// 	float vz;
-// 	float v_yaw;
-// 	float r1;
-// 	float r2;
-// 	float dz;
-// 	uint16_t checksum;
-// }__attribute__((packed))receive_packet_t;
-//
-//
-//typedef struct SendPacket
-//{
-//	uint8_t header;//0x5A
-//	uint8_t robot_color : 1;
-//	uint8_t reset_tracker : 1;
-//	uint8_t reserve : 6;
-//   float roll;
-//	float pitch;
-//	float yaw;
-//	float aim_x;
-//	float aim_y;
-//	float aim_z;
-//	uint16_t checksum;
-//}__attribute__((packed))send_packet_t;
 
 
 extern receive_packet_t aim_packet_from_nuc;

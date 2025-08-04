@@ -6,9 +6,9 @@
 #define INFANTRY 1
 
 //-------------------- 控制器 -------------------------
-// #define USE_REMOTE    			//若使用遥控器传输数据，取消注释
+//#define USE_REMOTE    			//若使用遥控器传输数据，取消注释
 #define USE_KEYBOARD                //若使用键盘传输数据(图传链路)，取消注释
-// #define USE_SUPERCAP  //若使用超级电容，取消注释
+//#define USE_REMOTE_KEYBORAD		//使用遥控器传输键盘(遥控器链路)
 
 //--------------------  电机  -------------------------
 #if INFANTRY
@@ -27,10 +27,7 @@
 #define CAN_HEADER_NUM 3 // CAN标识符数量
 #define CAN_INST_NUM 10	 // CAN设备总数
 #define CAN_NUM 2		 // CAN控制器数量
-#define USE_CAN2 1		 // 若使用CAN2，取消注释
-#define TOPIC_NUM 0
 #endif
-
 
 // IMU
 #define IMU_NUM 1
@@ -42,15 +39,18 @@
 // freeRTOS任务周期
 #define CONTROL_TASK_PERIOD 10 // freeRTOS执行周期, ms  1000HZ?
 #define CHASSIS_TASK_PERIOD 10
-#define GIMBAL_TASK_PERIOD 1
+#define GIMBAL_TASK_PERIOD 4
 #define CANBUS_TASK_PERIOD 1
 #define IMU_TASK_PERIOD 1
-#define UI_TASK_PERIOD 100
+#define UI_TASK_PERIOD 40
 
 
 // 遥控器灵敏度设置
 // #define REMOTE_YAW_SEN 0.03f  //
-#define REMOTE_YAW_SEN 0.00001f //
+
+#define REMOTE_YAW_SEN 0.00003f //
+//#define REMOTE_YAW_SEN 0.00001f //
+
 // #define REMOTE_YAW_SEN 0.005  //
 // #define REMOTE_PITCH_SEN 0.0000006125f
 #define REMOTE_PITCH_SEN 0.000006125f
@@ -66,7 +66,6 @@
 #if INFANTRY
 #define WHEEL_RADIUS 0.075f // 底盘车轮半径, 米
 #define CHASSIS_RADIUS 0.214f
-
 #define FRICTION_RADIUS 0.03 // 摩擦轮半径
 #endif
 
@@ -85,7 +84,8 @@
 // #define PITCH_UP_BOUND	3.58f
 // #define PITCH_LW_BOUND  PI	//pitch轴可动范围上下界
 // #define PITCH_MID       (0 +PI)  //pitch轴中间位置
-#define CHASSIS_ZEROPOINT    5121.0f	 // 在底盘坐标系中，云台yaw与底盘x平行时yaw轴电机角度 --- 即yaw轴零点（自主设定）
+#define CHASSIS_ZEROPOINT    5155.0f
+//#define CHASSIS_ZEROPOINT    5121.0f	 // 在底盘坐标系中，云台yaw正方向与底盘x轴平齐时yaw轴电机角度 --- 底盘坐标系x轴要结合各电机ID确定
 #define CHASSIS_ZEROPOINT_FOLLOW 5766.0f // 在底盘跟随时的零点
 #define AMMO_DIR_INV					 // 拨弹盘为顺时针旋转
 
@@ -93,7 +93,7 @@
 //  #define SHOOT_FREQ 15    //射频, hz
 #define SHOOT_FREQ 20 // 射频, hz
 // #define BULLET_V 25     //弹速, m/smotor_list[7]->pid[1].target
-#define BULLET_V 35.5f			 // 弹速, m/s
+#define BULLET_V 35		 // 弹速, m/s     34.0f---24
 #define MOTORSPEED_DIFF 2.0f // 弹速差异，m/s
 #define CALIBRATE 1			 // 弹速校准比率
 //#define CHS_SPEED_LMT 2.5f
@@ -121,5 +121,4 @@ typedef enum
 #endif
 
 // TODO:5、看门狗
-//热量限制
 

@@ -10,21 +10,12 @@
 #include "Chassis.h"
 #include "Gimbal.h"
 #include "ChassisPowerCtrl.h"
-//#include "Gimbal.h"
+#include "SuperCap.h"
+#include "referee.h"
 
 
 Motor_TypeDef *motor_list[MOTOR_NUM];
-float data_view[10];
 uint32_t calu_auto;
-
-float MotorProximity (float tar, float ref)
-{
-	if ( tar - ref > PI )
-		tar -= 2 * PI;
-	else if ( tar - ref < - PI )
-		tar += 2 * PI;
-	return tar;
-}
 
 /*
  * @brief  	计算PID并限幅
@@ -32,122 +23,13 @@ float MotorProximity (float tar, float ref)
  * @retval 	无，结果在结构体中
  * @note：运行频率为1000Hz
  */
-void MotorCalc (void)
-{
-	static float val_last = 0;
-	
-	for ( int i = 0; i < MOTOR_NUM; i ++ )
-	{
-		
-		motor_list[i] -> output = 0;
-		PID_Type_e pid_type = motor_list[i] -> info . pid_type;
-		
-		float val_now;
-		float *tar_now;
-		tar_now = &motor_list[i] -> target;
-		if ( pid_type == SPEED )
-		{
-			float tar_tmp = 0;
-			//输出轴转速转为转子转速
-			if ( motor_list[i] -> info . motor_type == M3508 )
-				tar_tmp = *tar_now * 3591 / 187;
-			else
-				tar_tmp = *tar_now;
-			
-			motor_list[i] -> output = PID_Increment (
-					&(motor_list[i] -> pid[SPEED]), MotorGetVal (motor_list[i], MOTORSPEED, RAD), tar_tmp
-			                                        );
-		}
-		else if ( pid_type == ANGLE )
-		{
-			//对Dji电机过零点处理
-			if ( motor_list[i] -> info . motor_type != OTHER )
-			{
-				if ( *tar_now - val_now > PI ) *tar_now -= 2 * PI;
-				if ( val_now - *tar_now > PI ) *tar_now += 2 * PI;
-			}
-			motor_list[i] -> output = PID_Position (
-					&(motor_list[i] -> pid[ANGLE]), MotorGetVal (motor_list[i], MOTORANGLE, RAD), *tar_now
-			                                       );
-		}
-		else if ( pid_type == DUAL_LOOP )
-		{
-			//  motor_list[i]->output = PID_Increment(&(motor_list[i]->pid[SPEED]), MotorGetVal(motor_list[i],MOTORSPEED,RAD), *tar_now);
-			if ( motor_list[i] -> value == NULL)
-				val_now = MotorGetVal (motor_list[i], MOTORANGLE, RAD);
-			else
-				val_now = MotorGetVal (motor_list[i], IMU, RAD);
-			// 对Dji电机过零点处理
-			if ( motor_list[i] -> info . motor_type != OTHER )
-			{
-				while ( *tar_now - val_now > PI )
-					*tar_now -= 2 * PI;
-				while ( val_now - *tar_now > PI )
-					*tar_now += 2 * PI;
-			}
-			motor_list[i] -> output = PID_Position (&(motor_list[i] -> pid[ANGLE]), val_now, *tar_now);
-			if ( i == MOTOR_PITCH )
-			{
-				motor_list[i] -> output = motor_list[i] -> output * - 1;//pitch轴速度方向相反
-			}
-			else if ( i == MOTOR_YAW )
-			{
-//                st->omega_z * 60 * CHASSIS_RADIUS * 187 / (3591 * WHEEL_RADIUS)
-				motor_list[i] -> output += motor_list[i] -> feed_fwd;//补偿小陀螺时云台的静态误差
-			}
-			motor_list[i] -> output = PID_Increment (
-					&(motor_list[i] -> pid[SPEED]), MotorGetVal (motor_list[i], MOTORSPEED, RAD),
-					motor_list[i] -> output
-			                                        );
-		}
-		else if ( pid_type == AMMO )
-		{
-			if ( gimbal_cmd . shooter_state == SHOOTER_NORMAL )
-			{
-				val_now = MotorGetVal (motor_list[i], MOTORANGLE, RAD);
-				//多圈转单圈 && 编码转弧度
-#ifdef AMMO_DIR_INV
-				if ( val_now > val_last + 0.005f )
-					*tar_now = *tar_now < 0 ? *tar_now + 2 * PI : *tar_now;
-#elif
-				if(val_now +  0.005f < val_last)
-					*tar_now = *tar_now> 2*PI ? *tar_now-2*PI : *tar_now;
-#endif
-				
-				motor_list[i] -> output = PID_Position (&motor_list[i] -> pid[ANGLE], val_now, *tar_now);
-				motor_list[i] -> output = PID_Increment (
-						&motor_list[i] -> pid[SPEED], motor_list[i] -> data . speed, motor_list[i] -> output
-				                                        );
-				val_last = val_now;
-			}
-			else if ( gimbal_cmd . shooter_state == SHOOTER_REVERSE )
-			{
-				val_now = MotorGetVal (motor_list[i], MOTORANGLE, RAD);
-				motor_list[i] -> output = PID_Position (&(motor_list[i] -> pid[ANGLE]), val_now, (val_now - PI));
-				motor_list[i] -> output = PID_Increment (
-						&(motor_list[i] -> pid[SPEED]), motor_list[i] -> data . speed, motor_list[i] -> output
-				                                        );
-				gimbal_cmd . shooter_state = SHOOTER_NORMAL;
-			}
-		}
-		
-		
-		else
-			sErrorHandel (OUT_OF_ENUM);
-		
-		//    MotorOptLmt(motor_list[i], motor_list[i]->info.output_max);
-		
-	}
-	return;
-}
-
 //PID输出
-void my_MotorCalc (void)
+void MotorCalc (void)
 {
 	static float tar = 0, ref = 0;
 //IMU控制
 	tar = motor_list[MOTOR_YAW] -> target;
-	
+
 	ref = MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN);//读IMU时已经做过处理，无需get-rad
 
 	while(tar-ref > PI)
@@ -169,9 +51,6 @@ void my_MotorCalc (void)
 	motor_list[MOTOR_YAW] -> output = PID_Increment (&(motor_list[MOTOR_YAW] -> pid[SPEED]), ref, tar) ;
 	motor_list[MOTOR_YAW] -> output += motor_list[MOTOR_YAW] -> pid[SPEED].Output_feed;
 
-
-
-
 //单增量式
 //	  tar = motor_list[MOTOR_YAW] -> target;
 //	  ref = MotorGetVal (motor_list[MOTOR_YAW], MOTORSPEED, RAD); //motor->data.speed can线返回的速度
@@ -185,7 +64,7 @@ void my_MotorCalc (void)
 	ref = MotorGetVal (motor_list[MOTOR_PITCH], IMU, RAD);
 	motor_list[MOTOR_PITCH] -> output = PID_Position (&(motor_list[MOTOR_PITCH] -> pid[ANGLE]), ref, tar);
 	motor_list[MOTOR_PITCH] -> output *= - 1.0f;//运动方向为负
-	
+
 	tar = motor_list[MOTOR_PITCH] -> output;
 	ref = MotorGetVal (motor_list[MOTOR_PITCH], MOTORSPEED, RAD);
 	motor_list[MOTOR_PITCH] -> output = PID_Increment (&(motor_list[MOTOR_PITCH] -> pid[SPEED]), ref, tar);
@@ -205,14 +84,13 @@ void my_MotorCalc (void)
 		                                        );
 	}
 	
-//	chassis_power_control();
+//	Chassis_PowerCtrl();
 
 	//#define MOTOR_AMMO 6
 	tar = motor_list[MOTOR_AMMO] -> target;
 	ref = MotorGetVal (motor_list[MOTOR_AMMO], MOTORSPEED, RAD);//rad/s
 	motor_list[MOTOR_AMMO] -> output = PID_Increment (&motor_list[MOTOR_AMMO] -> pid[SPEED], ref, tar);
 	
-
 	//#define MOTOR_SHT_L 7
 	//#define MOTOR_SHT_R 8
 	for ( uint8_t i = MOTOR_SHT_L; i <= MOTOR_SHT_R; i ++ )
@@ -225,6 +103,43 @@ void my_MotorCalc (void)
 		                                        );
 	}
 }
+
+/*
+ * @brief  	基于缓冲能量的功率控制,当超电失效时
+ * @retval 
+ */
+void Chassis_PowerCtrl(void)
+{
+	float k_power = 1;
+	float Power_limit = refree_info.Game_Robot_state.chassis_power_limit;
+	if(supercap_rx_data.errorCode || supercap_tx_data.enableDCDC == 0)
+	{
+		if(supercap_rx_data.chassisPower > refree_info.Game_Robot_state.chassis_power_limit)
+		{
+			if(refree_info.Power_Heat_Data.buffer_energy <10)
+				k_power = 0.10;
+			else if(refree_info.Power_Heat_Data.buffer_energy < 25)
+				k_power = 0.20;
+			else if(refree_info.Power_Heat_Data.buffer_energy < 30)
+				k_power = 0.35;
+			else if(refree_info.Power_Heat_Data.buffer_energy < 35)
+				k_power = 0.50;
+			else if(refree_info.Power_Heat_Data.buffer_energy < 40)
+				k_power = 0.65;
+			else if(refree_info.Power_Heat_Data.buffer_energy < 45)
+				k_power = 0.80;
+			else if(refree_info.Power_Heat_Data.buffer_energy < 50)
+				k_power = 0.90;
+
+			for(uint8_t i = MOTOR_CHS_1; i <= MOTOR_CHS_4; i ++)
+			{
+				motor_list[i] -> output *= k_power*(Power_limit)/supercap_rx_data.chassisPower;
+
+			}
+		}
+	}
+}
+
 
 /*
  * @brief  	获取电机当前值
@@ -262,21 +177,6 @@ float MotorGetIMU0_Pitch (Motor_TypeDef *motor)
 	return imu_list[0] -> pitch (imu_list[0]);
 }
 
-/*
- * @brief  	电机输出限幅
- * @param	电机结构体地址
- * @param   限幅值
- * @retval 	无
- */
-void MotorOptLmt (Motor_TypeDef *motor, float lmt)
-{
-	float limit = 0;
-	limit = motor -> info . output_max > lmt ? lmt : motor -> info . output_max;
-	if ( motor -> output >= limit )
-		motor -> output = limit;
-	else if ( motor -> output <= - limit )
-		motor -> output = - limit;
-}
 
 void MotorCanCbk (Can_InfoTypedef *st, uint8_t *rxdata, uint8_t list_id)
 {
@@ -331,29 +231,20 @@ void MotorStop (Motor_TypeDef *motor)
 	{
 		for ( int i = 0; i < MOTOR_NUM; i ++ )
 		{
-			motor_list[i] -> info . enable = 0;
 			motor_list[i] -> output = 0;
+			motor_list[i] -> info . enable = 0;
 			PID_Clear (&motor_list[i] -> pid[INNER]);
 			PID_Clear (&motor_list[i] -> pid[OUTER]);
 		}
 	}
 	else
 	{
-		motor -> info . enable = 0;
 		motor -> output = 0;
+		motor -> info . enable = 0;
 		PID_Clear (&motor -> pid[INNER]);
 		PID_Clear (&motor -> pid[OUTER]);
 	}
 }
-
-void MotorAllEnabled (void)
-{
-	for ( int i = 0; i < MOTOR_NUM; i ++ )
-	{
-		motor_list[i] -> info . enable = 1;
-	}
-}
-
 
 /*
  * @brief  	将电机注册至列表
@@ -381,10 +272,11 @@ void MotorRegist (Motor_InitTypedef st)
 	motor . can . CbkHandel = MotorCanCbk;
 	motor . can . hcan_x = st . hcan;
 	
+
 	Motor_InfoTypeDef info = {
 			.enable = 0,
 			.motor_type = st . motor_type,
-			.output_max = st . output_max,
+			.output_max = st . output_max,//电机信息
 			.pid_type = st . pid_type,
 	};
 	motor . info = info;
@@ -404,7 +296,8 @@ void MotorInit ()
 {
 //	自瞄
 	PID_TypeDef pid_outer = {
-			.Kp = 12,  //大小应与遥控器输入量一同调节，p太大应引起目标点抖动
+//			.Kp = 12,  //大小应与遥控器输入量一同调节，p太大应引起目标点抖动
+			.Kp = 6,
 			.Ki = 0,
 			.Kd = 0,
 			.Kf = 0,
@@ -418,7 +311,7 @@ void MotorInit ()
 			pid_inner . Ki = 8,   //太小会回弹
 			pid_inner . Kd = 0,
 			pid_inner . Kf = 1,
-			pid_inner . Output_Max = 15000, //5000-15000最合适
+			pid_inner . Output_Max = 16000, //5000-15000最合适
 	};
 //操作手
 //	PID_TypeDef pid_outer = {
@@ -470,7 +363,7 @@ void MotorInit ()
 	pid_outer . Output_Max = 10;
 	init . pid_outer = pid_outer;
 	
-	pid_inner . Kp = 1500;//太大过零点噪声极大
+	pid_inner . Kp = 2000;//太大过零点噪声极大
 	pid_inner . Ki = 20;
 	pid_inner . Kd = 0;
 	pid_inner . Kf = 0;
@@ -490,8 +383,9 @@ void MotorInit ()
 	init . can_id = 1;
 	init . hcan = &hcan1;
 	init . list_id = MOTOR_CHS_1;
+
 	init . motor_type = M3508,
-			init . pid_type = SPEED;
+	init . pid_type = SPEED;
 	init . output_max = 5000;
 	init . txheader_id = 0x200;
 	init . rxheader_id = 0x201;

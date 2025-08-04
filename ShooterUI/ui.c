@@ -152,12 +152,12 @@ void UITask(void *argument)
 		delta_gim = -chassis.error / 8192 * 2 * PI;
 		supercap_energy = (uint8_t)(supercap_rx_data.capEnergy * 100 / 255);
 
-		//		if(refree_info.Game_Robot_state.robot_id > 0 && refree_info.Game_Robot_state.robot_id < 12)
-		//			ui_self_id = 3;
-		//		else if(refree_info.Game_Robot_state.robot_id > 100 && refree_info.Game_Robot_state.robot_id < 112)
-		//			ui_self_id = 103;
-
 		update_shooter_ui(delta_gim, supercap_energy, auto_flag, fric_flag, supercap_rx_data.errorCode); // 更新UI
+
+	    if(refree_info.Game_Robot_state.robot_id > 0 && refree_info.Game_Robot_state.robot_id < 12)
+			    ui_self_id = 3;
+		else if(refree_info.Game_Robot_state.robot_id > 100 && refree_info.Game_Robot_state.robot_id < 112)
+				ui_self_id = 103;
 		ui_diff = osKernelGetTickCount() - time;
 		time = osKernelGetTickCount();
 

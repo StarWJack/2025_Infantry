@@ -27,8 +27,7 @@ void CanSendMsg()
 		}
 		HAL_CAN_AddTxMessage(&hcan1, can_txheader[i], can_txdata, (uint32_t *)CAN_TX_MAILBOX0);
 
-
-#ifdef USE_CAN2
+//CAN2
 		memset(can_txdata, 0, sizeof(can_txdata));
 		for (int j = 0; can_index[1][i][j] != (-1); j++)
 		{
@@ -37,7 +36,6 @@ void CanSendMsg()
 		}
 		HAL_CAN_AddTxMessage(&hcan2, can_txheader[i], can_txdata, (uint32_t *)CAN_TX_MAILBOX0);
 
-#endif
 	}
 }
 
@@ -54,13 +52,9 @@ void Can_Filter1Config(void)
 	Filter.FilterMaskIdLow = 0x0000; // accept all
 	Filter.FilterBank = 0;
 	HAL_CAN_ConfigFilter(&hcan1, &Filter);
-
-#ifdef USE_CAN2
-	// zyy --- 要改
-	//  Filter . FilterBank = 15;
-	//  Filter . FilterFIFOAssignment = CAN_FILTER_FIFO1;
+//CAN2
 	HAL_CAN_ConfigFilter(&hcan2, &Filter);
-#endif
+
 	return;
 }
 
@@ -84,19 +78,18 @@ void CanInit()
 	for (int i = 0; i < CAN_HEADER_NUM; i++)
 	{
 		uint8_t count_1 = 0;
-#ifdef USE_CAN2
 		uint8_t count_2 = 0;
-#endif
+
 		for (int j = 0; j < CAN_INST_NUM; j++)
 		{
 			if (can_list[j]->txheader.StdId == can_txheader[i]->StdId)
 			{
 				if (can_list[j]->hcan_x == &hcan1)
 					can_index[0][i][count_1++] = j;
-#ifdef USE_CAN2
+//CAN2
 				else if (can_list[j]->hcan_x == &hcan2)
 					can_index[1][i][count_2++] = j;
-#endif
+
 			}
 		}
 	}
@@ -110,7 +103,6 @@ void CanCbkHandle(CAN_HandleTypeDef *hcan)
 	uint8_t static data[8];
 	if (hcan->Instance == CAN1)
 	{
-
 		HAL_CAN_GetRxMessage(&hcan1, CAN_RX_FIFO0, &header, data);
 		for (int i = 0; i < CAN_INST_NUM; i++)
 		{
@@ -119,7 +111,7 @@ void CanCbkHandle(CAN_HandleTypeDef *hcan)
 		}
 	}
 
-#ifdef USE_CAN2 // 如果定义了USE_CAN2就使用CAN2
+// CAN2
 	if (hcan->Instance == CAN2)
 	{
 		HAL_CAN_GetRxMessage(&hcan2, CAN_RX_FIFO0, &header, data);
@@ -129,7 +121,7 @@ void CanCbkHandle(CAN_HandleTypeDef *hcan)
 				can_list[i]->CbkHandel(can_list[i], data, i);
 		}
 	}
-#endif
+
 }
 //回调函数
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)

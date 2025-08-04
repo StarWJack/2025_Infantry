@@ -20,35 +20,6 @@
 #define FEED_PARAM1 1214
 #define FEED_PARAM2 -26.32
 
-
-/*
- * 先暂时T:采样周期0.01s(10ms)
- * (根据输出大小调整合适单位)
- * 假设角速度/力矩：G(s)=1/(s+1)
- * 则前馈环节：Gf(s)=s+1
- *
- * ①输出：f_out=target'+(input-last_input)/T+input
- * input=(fliter(error))(t)即f_out=(input-last_input)/T+input
- * 从而f_out+pid_out=out,对时间积分(out)=output,输出output
- * 综上似乎拖慢了计算过程，待简化
- * &&
- * ②输出：f_out=kf*Err_now
- */
-
-// PID 优化环节使能标志位,通过位与可以判断启用的优化环节;也可以改成位域的形式
-typedef enum
-{
-	PID_IMPROVE_NONE = 0b00000000,                // 0000 0000
-	PID_INTEGRAL_LIMIT = 0b00000001,              // 0000 0001
-	PID_DERIVATIVE_ON_MEASUREMENT = 0b00000010,   // 0000 0010
-	PID_TRAPEZOID_INTEGRAL = 0b00000100,         // 0000 0100
-	PID_Proportional_On_Measurement = 0b00001000, // 0000 1000
-	PID_OUTPUT_FILTER = 0b00010000,                // 0001 0000
-	PID_CHANGING_INTEGRATION_RATE = 0b00100000,     // 0010 0000
-	PID_DERIVATIVE_FILTER = 0b01000000,            // 0100 0000
-	PID_ErrorHandle = 0b10000000,                 // 1000 0000 检测错误
-} PID_improvement_e;
-
 typedef struct __PID_TypeDef
 {
 	float Kp;
@@ -61,9 +32,9 @@ typedef struct __PID_TypeDef
 	float i_out;
 	float d_out;
 
-	float target;
+	float target;//目标值
 	float last_target;
-	float measure;
+	float measure;//观测值
 	float last_measure;
 	float dead_band;
 
@@ -71,7 +42,7 @@ typedef struct __PID_TypeDef
 	float Err_last;
 	float Err_now;
 	float Err_sum;
-	float Output_Max;
+	float Output_Max; //PID最大输出值
 	float Err_sum_Max;
 
 	float Output;

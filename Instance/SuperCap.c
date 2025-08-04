@@ -29,8 +29,8 @@ CAN_TxHeaderTypeDef supercap_txheader = {
 
 void SuperCapFillMsg(Can_InfoTypedef *st, uint8_t *txdata, uint8_t list_id)
 {
-   supercap_tx_data.feedbackRefereePowerLimit =(refree_info.Game_Robot_state.chassis_power_limit - 5)
-	// supercap_tx_data.feedbackRefereePowerLimit = 55;
+  supercap_tx_data.feedbackRefereePowerLimit =(refree_info.Game_Robot_state.chassis_power_limit - 5);
+	//  supercap_tx_data.feedbackRefereePowerLimit = 48;
     supercap_tx_data.feedbackRefereeEnergyBuffer = refree_info.Power_Heat_Data.buffer_energy;
     if(supercap_tx_data.feedbackRefereePowerLimit == 0 || refree_info.Game_Robot_state.chassis_power_limit < 40) //防止裁判系统数据接收不到
         supercap_tx_data.feedbackRefereePowerLimit = 40;
@@ -49,20 +49,13 @@ void SuperCapCanCbk(Can_InfoTypedef *st, uint8_t *rxdata, uint8_t list_id)
  */
 void SuperCapInit(void)
 {
-    // supercap_tx_data.enableDCDC = 0;//初始化先不使能DCDC
-    // supercap_tx_data.systemRestart = 1;//系统重启
-    // supercap_tx_data.feedbackRefereePowerLimit = 11;
-    // supercap_tx_data.feedbackRefereeEnergyBuffer = 22;
-    // SuperCap_CanInfo.txheader.StdId = SUPERCAP_CAN_ID;
     SuperCap_InitTypedef init = {
         .can_id = 1,
         .hcan = &hcan1,       // 超级电容挂载在CAN1上
         .txheader_id = 0x061, // 发送ID
         .rxheader_id = 0x097, // 接收ID
     };
-
     supercap_tx_data.enableDCDC = 1;
-    
     SuperCapRegist(init);
 }
 

@@ -10,7 +10,7 @@
 #include "cmsis_os2.h"
 
 osThreadId_t IMU_task_handle;
-
+uint8_t imu_diff;
 IMU_TypeDef *imu_list[IMU_NUM];
 uint8_t spi_TxData, spi_RxData;
 
@@ -273,6 +273,7 @@ void IMU_Task(void *argument)
 	{
 		BMI088Update(imu_list[0]);
 
+		imu_diff = osKernelGetTickCount() - time;
 		time = osKernelGetTickCount();
 		osDelayUntil(time + IMU_TASK_PERIOD);
 	}

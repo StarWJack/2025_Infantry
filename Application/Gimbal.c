@@ -84,8 +84,7 @@ void GimbalCtrl (Gimbal_CmdTypedef *st)
 
 #ifdef USE_KEYBOARD
 
-
-		if(st -> shooter == AUTO || st -> shooter == AUTO_SHOOT )//自瞄 -- 云台跟随和火控分开
+		if(st -> shooter == AUTO || st -> shooter == AUTO_SHOOT || st -> shooter == AUTO_FIRE)//自瞄 -- 云台跟随和火控分开
 		{
 			if(gimbal_auto.yaw != PI && gimbal_auto.yaw_diff != 0)
 						tar_yaw = gimbal_auto.yaw ;
@@ -108,6 +107,9 @@ void GimbalCtrl (Gimbal_CmdTypedef *st)
 			else if(tar_pitch < PITCH_LL_BOUND)
 				tar_pitch = PITCH_LL_BOUND;
 			MotorSetTar (motor_list[MOTOR_PITCH], tar_pitch, ABS);
+
+			st -> mouse_flag = 0;
+			st -> spin_flag = 0;
 		}
 	    else
 		{
@@ -119,7 +121,7 @@ void GimbalCtrl (Gimbal_CmdTypedef *st)
 				 while ( tmp <0 )
 					 tmp += 2 * PI;
 //操作手云台补偿
-			 if(st -> mouse_flag && st ->spin_flag != 0)
+			 if(st -> mouse_flag && st ->spin_flag != 0 )
 			 {
 			 	tmp = MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN);
 			 }
@@ -212,7 +214,7 @@ void ShooterCtrl (Gimbal_CmdTypedef *st)
 
 // 自瞄/操作手 两套PID
 // 	if(gimbal_cmd.shooter == AUTO || gimbal_cmd.shooter == AUTO_SHOOT || gimbal_cmd.shooter == AUTO_FIRE)
-// 				motor_list[MOTOR_YAW] -> pid[ANGLE].Kp = 12;
+// 				motor_list[MOTOR_YAW] -> pid[ANGLE].Kp = 10;
 // 	else
 // 		motor_list[MOTOR_YAW] -> pid[ANGLE].Kp = 8.5;
 }

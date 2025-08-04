@@ -12,8 +12,9 @@
 #include "ChassisPowerCtrl.h"
 
 osThreadId_t canbus_task_handel;
+uint16_t highWaterMark_canbus;
 RobotState_e robo_state;
-uint32_t CanBus_diff = 0;
+uint8_t CanBus_diff = 0;
 
 void CANBusInit ()
 {
@@ -50,42 +51,36 @@ void CANBusTask (void *argument)
 					motor_list[i] -> info . enable = 1;
 				GimbalMotorPosi_Init();
 			}
-			my_MotorCalc ();
+			MotorCalc ();
 			robo_state = NORMAL;
 		}
 #endif
 
-#ifdef USE_KEYBOARD
-
-		if(RC_Ctl . keyboard . C)
-		{
-			robo_state = NORMAL;
-			if (robo_state == NORMAL)
-			{
-				for (int i = 0; i < MOTOR_NUM; i ++)
-					motor_list[i] -> info . enable = 1;
-				GimbalMotorPosi_Init();
-			}
-		}
-		else if(RC_Ctl . keyboard . V)
-		{
-			robo_state = BAN;
+ #ifdef USE_KEYBOARD
+ 		if(RC_Ctl . keyboard . C)
+ 		{
+			for (int i = 0; i < MOTOR_NUM; i ++)
+			motor_list[i] -> info . enable = 1;
+			GimbalMotorPosi_Init();
+ 			robo_state = NORMAL;
+ 		}
+ 		else if(RC_Ctl . keyboard . B)
+ 		{
 			MotorStop (NULL);
-		}
+ 			robo_state = BAN;
+ 		}
 
-		if(robo_state == NORMAL)
-		{
-			my_MotorCalc ();
-		}
-		else if(robo_state == BAN)
-		{
-			MotorStop (NULL);
-		}
+ 		if(robo_state == NORMAL )
+ 			MotorCalc ();
+ 		else if(robo_state == BAN)
+ 			MotorStop (NULL);
+ #endif
 
-#endif
 
 		CanSendMsg ();
 		CanBus_diff = osKernelGetTickCount () - time;
+
+		highWaterMark_canbus = uxTaskGetStackHighWaterMark(NULL);
 		time = osKernelGetTickCount ();
 		osDelayUntil (time + CANBUS_TASK_PERIOD);
 	}

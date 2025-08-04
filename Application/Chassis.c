@@ -5,11 +5,10 @@
 #include "motor.h"
 #include "Control.h"
 
-
-
 osThreadId_t chassis_task_handel;
 Chassis_TypeDef chassis;
 Chassis_CmdTypedef chassis_cmd;
+uint8_t chassis_diff;
 
 void ChassisTask (void *arguement);
 
@@ -26,7 +25,7 @@ void ChassisInit (void)
 /*
  * @brief  	全向轮解算
  * @param	底盘控制结构体指针
- * @retval 	float[4], 各轮角速度
+ * @retval 	float[4], 各轮角速度 , 1-4电机ID
  * @note:   仅考虑全向轮安装角为45°且轴长相等的情况
  */
 void OnmiSolve (Chassis_CmdTypedef *cmd, float *ret)
@@ -41,7 +40,7 @@ void OnmiSolve (Chassis_CmdTypedef *cmd, float *ret)
 		   4\\      //3
 					
 	*/
-	float omega_z = cmd -> omega_z + cmd -> omega_fllow;
+	float omega_z = cmd -> omega_z + cmd -> omega_fllow;//角速度
 	ret[0] = (omega_z * (2 * PI * CHASSIS_RADIUS) - (- cmd -> vx - cmd -> vy) * SQRT_2) / WHEEL_RADIUS;
 	ret[1] = (omega_z * (2 * PI * CHASSIS_RADIUS) - (cmd -> vx - cmd -> vy) * SQRT_2) / WHEEL_RADIUS;
 	ret[2] = (omega_z * (2 * PI * CHASSIS_RADIUS) - (cmd -> vx + cmd -> vy) * SQRT_2) / WHEEL_RADIUS;
@@ -122,8 +121,10 @@ void ChassisTask (void *arguement)
 
 		if ( chassis_cmd . mode == SPIN )
 		{
-			chassis_cmd.omega_z = 0;//固定小陀螺转速
+			chassis_cmd.omega_z = 1.2;//固定小陀螺转速 , TODO随等级提高小陀螺转速  , rps
 			chassis_cmd.omega_fllow = 0;
+
+			chassis.error =  MotorGetVal (motor_list[MOTOR_YAW], ANGLE, ORIGIN) - CHASSIS_ZEROPOINT;//
 		}
 		else if ( chassis_cmd . mode == FOLLOW )
 		{
@@ -139,9 +140,9 @@ void ChassisTask (void *arguement)
 
 			chassis.error = chassis.target - chassis.value;
 			//双环控制+500死区      有问题
-			if( (chassis.target - chassis.value) < 100 && (chassis.target - chassis.value) > -100)
+			if( (chassis.target - chassis.value) < 200 && (chassis.target - chassis.value) > -200)
 			{
-//				chassis.output = 0;//错误，应该平滑降为0,有史
+                //平滑，但效果不显著
 				chassis.output *=0.1;
 				if(ABS(chassis.output) < 0.1)
 						chassis.output = 0;
@@ -163,7 +164,7 @@ void ChassisTask (void *arguement)
 //				chassis.output = PID_Increment (&chassis . pid[INNER], chassis.value,chassis.target);
 			}
 			//如果不想跟随，注释下面底盘输出即可
-//			chassis_cmd.omega_fllow = - chassis . output;
+			chassis_cmd.omega_fllow = - chassis . output;
 	}
 		else
 		{
@@ -175,6 +176,7 @@ void ChassisTask (void *arguement)
 		for ( int i = 0; i < 4; i ++ )
 			MotorSetTar (motor_list[i + MOTOR_CHS_1], solve[i], ABS);
 		
+		chassis_diff = osKernelGetTickCount ()-time;
 		time = osKernelGetTickCount ();
 		osDelayUntil (time + CHASSIS_TASK_PERIOD);
 	}

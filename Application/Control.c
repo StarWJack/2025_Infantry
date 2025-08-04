@@ -273,10 +273,6 @@ void ControlTask (void *argument)
 		//打包发送
 		Pack_And_Send_Data_ROS2 (&aim_packet_to_nuc);
 
-		// if(refree_info.Game_Robot_state.robot_id > 0 && refree_info.Game_Robot_state.robot_id < 12)
-		// 	ui_self_id = 3;
-		// else if(refree_info.Game_Robot_state.robot_id > 100 && refree_info.Game_Robot_state.robot_id < 112)
-		// 	ui_self_id = 103;
 
 //		highWaterMark = uxTaskGetStackHighWaterMark(NULL);
 

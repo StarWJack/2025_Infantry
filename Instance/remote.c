@@ -18,18 +18,24 @@
 #include "dma.h"
 #include "config.h"
 #include "referee.h"
+#include "cmsis_os2.h"
 
 #define Remote_CHANNAL_ERROR_VALUE 700
 #define REMOTE_RXBUFF_SIZE 54
 
 RC_Ctl_t RC_Ctl;
 uint8_t remote_rxbuff[REMOTE_RXBUFF_SIZE]={0};
+//测试
+uint8_t remote_error_flag;
+uint8_t remote_rest_flag;
 
 uint8_t Remote_data_is_error(void);
 extern void RefereeSolve();
 
 void RemoteRestart()//重启串口和DMA，针对于数据错位和无法进入回调
 {
+	remote_rest_flag++;
+	osDelay(250);
 	__HAL_RCC_USART3_CLK_DISABLE();
 	__HAL_RCC_DMA1_CLK_DISABLE();
     __HAL_DMA_CLEAR_FLAG(&hdma_usart3_rx,DMA_FLAG_TCIF1_5);
@@ -40,8 +46,8 @@ void RemoteRestart()//重启串口和DMA，针对于数据错位和无法进入�
 	
     memset(&RC_Ctl, 0, sizeof(RC_Ctl));
     HAL_UARTEx_ReceiveToIdle_DMA(&huart3, remote_rxbuff, REMOTE_RXBUFF_SIZE);
-//	__HAL_DMA_DISABLE_IT(&hdma_usart3_rx,DMA_IT_HT);
-
+	__HAL_DMA_DISABLE_IT(&hdma_usart3_rx,DMA_IT_HT);
+	osDelay(250);
 }
 
 
@@ -77,6 +83,8 @@ void RemoteSolve()
 	RC_Ctl.rc.wheel = (remote_rxbuff[16] | remote_rxbuff[17] << 8) - 1024;
 	if (Remote_data_is_error())
 	{
+		remote_error_flag = 1;
+
 	    memset(&RC_Ctl, 0, sizeof(RC_Ctl));
 		RC_Ctl.rc.ch1 = 0;
     	RC_Ctl.rc.ch2 = 0;
@@ -136,14 +144,6 @@ uint8_t Remote_data_is_error(void)
     {
         goto error;
     }
-    if (RC_Ctl.rc.sw1 == 0)
-    {
-        goto error;
-    }
-    if (RC_Ctl.rc.sw2 == 0)
-    {
-        goto error;
-    }
     return 0;
 
     error:
@@ -156,6 +156,7 @@ HAL_StatusTypeDef state;
 void RemoteInit(void)
 {
 	HAL_UARTEx_ReceiveToIdle_DMA(&huart3, remote_rxbuff, REMOTE_RXBUFF_SIZE);
+	__HAL_DMA_DISABLE_IT(&hdma_usart3_rx,DMA_IT_HT);
 }
 
 
@@ -217,7 +218,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 		HAL_UARTEx_ReceiveToIdle_DMA(&huart1, referee_pic_rx_buf, REFEREE_PICBUFF_SIZE);
 		__HAL_DMA_DISABLE_IT(&hdma_usart1_rx,DMA_IT_HT);
 	}
-
+//遥控器问题
 	else if(huart->Instance == USART3)
 	{
 		if(__HAL_UART_GET_FLAG(huart, UART_FLAG_NE))//噪声错误标志位
@@ -238,7 +239,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 		}
 
 		// 重新启动串口接收（如果需要）
-		HAL_UARTEx_ReceiveToIdle_DMA(&huart1, referee_pic_rx_buf, REFEREE_PICBUFF_SIZE);
-		__HAL_DMA_DISABLE_IT(&hdma_usart1_rx,DMA_IT_HT);
+		HAL_UARTEx_ReceiveToIdle_DMA(&huart3, remote_rxbuff, REMOTE_RXBUFF_SIZE);
+		__HAL_DMA_DISABLE_IT(&hdma_usart3_rx,DMA_IT_HT);
 	}
 }

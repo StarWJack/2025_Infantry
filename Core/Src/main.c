@@ -137,26 +137,25 @@ int main(void)
   /* 此段只能放在main.c里，否则cna2无法读取回调信息 */
   HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
   HAL_CAN_Start(&hcan1);
-#ifdef USE_CAN2
+  //CAN2
   HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
   HAL_CAN_Start(&hcan2);
-#endif
+  
+  
+  /* 模块初始�???? */
+  MotorInit();	// pid参数等各项初始化
+  SuperCapInit(); // 超级电容初始�????
+  CanInit();
+  RemoteInit();
+  RefereeInit();
+  /* 任务初始�???? */
 
-	/* 模块初始�??? */
-	MotorInit();	// pid参数等各项初始化
-	SuperCapInit(); // 超级电容初始�???
-	CanInit();
-	RemoteInit();
-	RefereeInit();
-	/* 任务初始�??? */
-
-	IMUTask_Init();
-	ControlInit();
-	CANBusInit();
-	GimbalInit();
-	ChassisInit();
-	UI_Init();
-	//  UI_taskInit();
+  IMUTask_Init();
+  ControlInit();
+  CANBusInit();
+  GimbalInit();
+  ChassisInit();
+  UI_Init();
 
   /* USER CODE END 2 */
 
