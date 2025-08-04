@@ -104,6 +104,7 @@ void CanCbkHandle(CAN_HandleTypeDef *hcan)
 	if (hcan->Instance == CAN1)
 	{
 		HAL_CAN_GetRxMessage(&hcan1, CAN_RX_FIFO0, &header, data);
+		
 		for (int i = 0; i < CAN_INST_NUM; i++)
 		{
 			if (can_list[i]->hcan_x->Instance == CAN1 && can_list[i]->rxheader.StdId == header.StdId)

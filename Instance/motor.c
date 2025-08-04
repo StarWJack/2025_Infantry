@@ -197,6 +197,7 @@ void MotorFillMsg (Can_InfoTypedef *st, uint8_t *txdata, uint8_t list_id)
 {
 	uint8_t tmp_id = st -> CAN_id > 4 ? (st -> CAN_id) - 4 : st -> CAN_id;
 	txdata[2 * (tmp_id - 1)] = (int16_t) motor_list[list_id] -> output >> 8;
+	
 	txdata[(2 * tmp_id) - 1] = (int16_t) motor_list[list_id] -> output;
 }
 

@@ -37,13 +37,12 @@ void CANBusTask (void *argument)
 	for (;;)
 	{
 
-#ifdef USE_REMOTE
-		if (RC_Ctl . rc . sw1 != 1 && RC_Ctl . rc . sw1 != 3)
+		if (RC_Ctl . rc . sw1 == 3)
 		{
 			MotorStop (NULL);
 			robo_state = BAN;
 		} 
-		else
+		else if(RC_Ctl . rc . sw1 == 1)
 		{
 			if (robo_state == BAN)
 			{
@@ -51,12 +50,10 @@ void CANBusTask (void *argument)
 					motor_list[i] -> info . enable = 1;
 				GimbalMotorPosi_Init();
 			}
-			MotorCalc ();
 			robo_state = NORMAL;
 		}
-#endif
 
- #ifdef USE_KEYBOARD
+
  		if(RC_Ctl . keyboard . C)
  		{
 			for (int i = 0; i < MOTOR_NUM; i ++)
@@ -74,7 +71,7 @@ void CANBusTask (void *argument)
  			MotorCalc ();
  		else if(robo_state == BAN)
  			MotorStop (NULL);
- #endif
+
 
 
 		CanSendMsg ();

@@ -32,6 +32,7 @@ void SuperCapFillMsg(Can_InfoTypedef *st, uint8_t *txdata, uint8_t list_id)
   supercap_tx_data.feedbackRefereePowerLimit =(refree_info.Game_Robot_state.chassis_power_limit - 5);
 	//  supercap_tx_data.feedbackRefereePowerLimit = 48;
     supercap_tx_data.feedbackRefereeEnergyBuffer = refree_info.Power_Heat_Data.buffer_energy;
+
     if(supercap_tx_data.feedbackRefereePowerLimit == 0 || refree_info.Game_Robot_state.chassis_power_limit < 40) //防止裁判系统数据接收不到
         supercap_tx_data.feedbackRefereePowerLimit = 40;
 

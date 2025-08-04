@@ -121,7 +121,8 @@ void ChassisTask (void *arguement)
 
 		if ( chassis_cmd . mode == SPIN )
 		{
-			chassis_cmd.omega_z = 1.2;//固定小陀螺转速 , TODO随等级提高小陀螺转速  , rps
+
+//			chassis_cmd.omega_z = 1.2;//固定小陀螺转速 , TODO随等级提高小陀螺转速  , rps  ,control里修改
 			chassis_cmd.omega_fllow = 0;
 
 			chassis.error =  MotorGetVal (motor_list[MOTOR_YAW], ANGLE, ORIGIN) - CHASSIS_ZEROPOINT;//

@@ -10,6 +10,9 @@
 #define USE_KEYBOARD                //若使用键盘传输数据(图传链路)，取消注释
 //#define USE_REMOTE_KEYBORAD		//使用遥控器传输键盘(遥控器链路)
 
+//3v3 和 1v1
+//#define GAME_ONE
+#define GAME_THREE
 //--------------------  电机  -------------------------
 #if INFANTRY
 #define MOTOR_NUM 9 // 电机总数

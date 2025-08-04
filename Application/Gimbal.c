@@ -27,11 +27,10 @@ void GimbalInit (void)
 	gimbal_task_handel = osThreadNew (GimbalTask, NULL, &attr_task);
 }
 
-void GimbalCtrl (Gimbal_CmdTypedef *st)
+void GimbalCtrl_Remote(Gimbal_CmdTypedef *st)
 {
 	float tar_yaw;
 	float tar_pitch;
-#ifdef USE_REMOTE
 	if(st -> shooter == STOP)
 	{
 		//目标值+增量
@@ -80,68 +79,70 @@ void GimbalCtrl (Gimbal_CmdTypedef *st)
 		MotorSetTar (motor_list[MOTOR_PITCH], tar_pitch, ABS);
 	}
 
-#endif
+}
 
-#ifdef USE_KEYBOARD
+void GimbalCtrl_Key(Gimbal_CmdTypedef *st)
+{
+	float tar_yaw;
+	float tar_pitch;
 
-		if(st -> shooter == AUTO || st -> shooter == AUTO_SHOOT || st -> shooter == AUTO_FIRE)//自瞄 -- 云台跟随和火控分开
-		{
-			if(gimbal_auto.yaw != PI && gimbal_auto.yaw_diff != 0)
-						tar_yaw = gimbal_auto.yaw ;
-			else
-				tar_yaw = motor_list[MOTOR_YAW] -> target + st -> v_yaw;
+	if(st -> shooter == AUTO || st -> shooter == AUTO_SHOOT || st -> shooter == AUTO_FIRE)//自瞄 -- 云台跟随和火控分开
+	{
+		if(gimbal_auto.yaw != PI && gimbal_auto.yaw_diff != 0)
+					tar_yaw = gimbal_auto.yaw ;
+		else
+			tar_yaw = motor_list[MOTOR_YAW] -> target + st -> v_yaw;
 
-			while ( tar_yaw > 2*PI )
-				tar_yaw -= 2 * PI;
-			while ( tar_yaw <0 )
-				tar_yaw += 2 * PI;
-			MotorSetTar (motor_list[MOTOR_YAW], tar_yaw, ABS);
+		while ( tar_yaw > 2*PI )
+			tar_yaw -= 2 * PI;
+		while ( tar_yaw <0 )
+			tar_yaw += 2 * PI;
+		MotorSetTar (motor_list[MOTOR_YAW], tar_yaw, ABS);
 
-			if(gimbal_auto.pitch != PI && gimbal_auto.pitch_diff != 0)
-				tar_pitch = gimbal_auto.pitch;
-			else
-				tar_pitch = motor_list[MOTOR_PITCH] -> target - st -> v_pitch;
+		if(gimbal_auto.pitch != PI && gimbal_auto.pitch_diff != 0)
+			tar_pitch = gimbal_auto.pitch;
+		else
+			tar_pitch = motor_list[MOTOR_PITCH] -> target - st -> v_pitch;
 
-			if(tar_pitch > PITCH_LH_BOUND)
-				tar_pitch = PITCH_LH_BOUND;
-			else if(tar_pitch < PITCH_LL_BOUND)
-				tar_pitch = PITCH_LL_BOUND;
-			MotorSetTar (motor_list[MOTOR_PITCH], tar_pitch, ABS);
+		if(tar_pitch > PITCH_LH_BOUND)
+			tar_pitch = PITCH_LH_BOUND;
+		else if(tar_pitch < PITCH_LL_BOUND)
+			tar_pitch = PITCH_LL_BOUND;
+		MotorSetTar (motor_list[MOTOR_PITCH], tar_pitch, ABS);
 
-			st -> mouse_flag = 0;
-			st -> spin_flag = 0;
-		}
-	    else
-		{
-			//目标值+增量
-			float tmp = motor_list[MOTOR_YAW] -> target + st -> v_yaw ;
-			// （0 < tmp < 2*PI) 过零点限制范围
-				 while ( tmp > 2*PI )
-					 tmp -= 2 * PI;
-				 while ( tmp <0 )
-					 tmp += 2 * PI;
+		st -> mouse_flag = 0;
+		st -> spin_flag = 0;
+	}
+	else
+	{
+		//目标值+增量
+		float tmp = motor_list[MOTOR_YAW] -> target + st -> v_yaw ;
+		// （0 < tmp < 2*PI) 过零点限制范围
+			 while ( tmp > 2*PI )
+				 tmp -= 2 * PI;
+			 while ( tmp <0 )
+				 tmp += 2 * PI;
 //操作手云台补偿
-			 if(st -> mouse_flag && st ->spin_flag != 0 )
-			 {
-			 	tmp = MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN);
-			 }
+		 if(st -> mouse_flag && st ->spin_flag != 0 )
+		 {
+			tmp = MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN);
+		 }
 
-			MotorSetTar (motor_list[MOTOR_YAW], tmp, ABS);
+		MotorSetTar (motor_list[MOTOR_YAW], tmp, ABS);
 
-			tmp = motor_list[MOTOR_PITCH] -> target - st -> v_pitch;
-			//pitch限制范围，绝对位置---有待优化，上限角度限死
-			if(tmp > PITCH_LH_BOUND)
-				tmp = PITCH_LH_BOUND;
-			else if(tmp < PITCH_LL_BOUND)
-				tmp = PITCH_LL_BOUND;
-			MotorSetTar (motor_list[MOTOR_PITCH], tmp, ABS);
-		}
-#endif
+		tmp = motor_list[MOTOR_PITCH] -> target - st -> v_pitch;
+		//pitch限制范围，绝对位置---有待优化，上限角度限死
+		if(tmp > PITCH_LH_BOUND)
+			tmp = PITCH_LH_BOUND;
+		else if(tmp < PITCH_LL_BOUND)
+			tmp = PITCH_LL_BOUND;
+		MotorSetTar (motor_list[MOTOR_PITCH], tmp, ABS);
+	}
+
 
 }
 
-
-void ShooterCtrl (Gimbal_CmdTypedef *st)
+void ShooterCtrl_Remote(Gimbal_CmdTypedef *st)
 {
 	if ( st -> friction_state )
 	{//固定射速，待添加遥控器遥杆控制   
@@ -161,31 +162,16 @@ void ShooterCtrl (Gimbal_CmdTypedef *st)
 
 	else if( st -> shooter == SHOOT )
 	{
-		#ifdef USE_REMOTE
 		float tar = st -> v_shoot * 4 * PI /36; // 实际弹频 = v_shoot/36（拨弹盘一圈）/10(任务周期) *8  k/s
 		if(tar > 0)
 		{
 			tar = -tar;
 		}
-		#endif
 
-		#ifdef USE_KEYBOARD
-		float tar = 1870 * 2 * PI /36; // 实际弹频 = v_shoot/36（拨弹盘一圈）/10(任务周期) *8  k/s
-		if(tar > 0)
-		{
-			tar = -tar;
-		}
-		#endif
 		MotorSetTar (motor_list[MOTOR_AMMO], tar, ABS);
 	}
-//自瞄+火控
-#ifdef USE_KEYBOARD
-	else if (st -> shooter == AUTO_SHOOT)
-#endif
 
-#ifdef USE_REMOTE
 	else if ( st -> shooter == AUTO && st -> shoot_advice)
-#endif
 	{
 		float tar = 3960 * 2 * PI /36;  //固定值
 		if(tar > 0)
@@ -197,9 +183,56 @@ void ShooterCtrl (Gimbal_CmdTypedef *st)
 		MotorSetTar (motor_list[MOTOR_AMMO], tar, ABS);
 	}
 
+	else
+	{
+		MotorSetTar (motor_list[MOTOR_AMMO], 0, ABS);
+	}
+
+}
+
+void ShooterCtrl_Key(Gimbal_CmdTypedef *st)
+{
+	if ( st -> friction_state )
+	{//固定射速，待添加遥控器遥杆控制
+		MotorSetTar (motor_list[MOTOR_SHT_L], BULLET_V, ABS);
+		MotorSetTar (motor_list[MOTOR_SHT_R], - BULLET_V, ABS);
+	}
+	else
+	{
+		MotorSetTar (motor_list[MOTOR_SHT_L], 0, ABS);
+		MotorSetTar (motor_list[MOTOR_SHT_R], 0, ABS);
+	}
+	//sw2 == 2; 摩擦轮启动但拨弹盘不旋转
+	if ( st -> shooter == STOP )
+	{
+		MotorSetTar (motor_list[MOTOR_AMMO], 0, ABS);
+	}
+
+	else if( st -> shooter == SHOOT )
+	{
+		float tar = 2640 * 2 * PI /36; // 实际弹频 = v_shoot/36（拨弹盘一圈）/10(任务周期) *8  k/s
+		if(tar > 0)
+		{
+			tar = -tar;
+		}
+		MotorSetTar (motor_list[MOTOR_AMMO], tar, ABS);
+	}
+//自瞄+火控
+	else if (st -> shooter == AUTO_SHOOT)
+	{
+		float tar = 2640 * 2 * PI /36;  //固定值
+		if(tar > 0)
+		{
+			tar = -tar;
+		}
+		MotorSetTar (motor_list[MOTOR_SHT_L], BULLET_V, ABS);
+		MotorSetTar (motor_list[MOTOR_SHT_R], - BULLET_V, ABS);
+		MotorSetTar (motor_list[MOTOR_AMMO], tar, ABS);
+	}
+
 	else if (st -> shoot_advice && st -> shooter == AUTO_FIRE)
 	{
-		float tar = 2310 * 2 * PI /36;  //固定值
+		float tar = 3300 * 2 * PI /36;  //固定值
 		if(tar > 0)
 		{
 			tar = -tar;
@@ -213,12 +246,11 @@ void ShooterCtrl (Gimbal_CmdTypedef *st)
 	}
 
 // 自瞄/操作手 两套PID
-// 	if(gimbal_cmd.shooter == AUTO || gimbal_cmd.shooter == AUTO_SHOOT || gimbal_cmd.shooter == AUTO_FIRE)
-// 				motor_list[MOTOR_YAW] -> pid[ANGLE].Kp = 10;
-// 	else
-// 		motor_list[MOTOR_YAW] -> pid[ANGLE].Kp = 8.5;
+ 	if(gimbal_cmd.shooter == AUTO || gimbal_cmd.shooter == AUTO_SHOOT || gimbal_cmd.shooter == AUTO_FIRE)
+ 				motor_list[MOTOR_YAW] -> pid[ANGLE].Kp = 12;
+ 	else
+ 		motor_list[MOTOR_YAW] -> pid[ANGLE].Kp = 6;
 }
-
 
 void GimbalMotorPosi_Init (void)
 {
@@ -235,6 +267,8 @@ void GimbalTask (void *argument)
 
 	for ( ;; )
 	{
+
+
 //更新IMU数据
 		aim_packet_to_nuc.roll = imu_list[0]->angle[1];
 	    aim_packet_to_nuc.yaw = imu_list[0]->angle[0];
@@ -266,8 +300,16 @@ void GimbalTask (void *argument)
 	    	gimbal_cmd.shoot_advice = 0;
 	    }
 //云台，射击控制逻辑 （可以和遥控器区分两个函数）
-		GimbalCtrl (&gimbal_cmd);
-		ShooterCtrl (&gimbal_cmd);
+	    if(RC_Ctl.rc.sw1 ==0 || RC_Ctl.rc.sw1 == 2)
+		{
+	    	GimbalCtrl_Key(&gimbal_cmd);
+			ShooterCtrl_Key(&gimbal_cmd);
+		}
+		else
+		{
+			GimbalCtrl_Remote(&gimbal_cmd);
+			ShooterCtrl_Remote(&gimbal_cmd);
+		}
 
 		time = osKernelGetTickCount ();
 		osDelayUntil (time + GIMBAL_TASK_PERIOD);

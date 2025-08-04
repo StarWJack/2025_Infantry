@@ -71,10 +71,41 @@ void KeyboardCtrl (Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 	float SPEED_LMT;
 
 //速度缩放系数,结合斜坡的步长调整
+
+//结合场地，调节最大速度
+
+#ifdef GAME_THREE
 	if(RC_Ctl . keyboard . X)
-		SPEED_LMT = 0.020f;
-	else
 		SPEED_LMT = 0.010f;
+
+	else if(refree_info.Game_Robot_state.robot_level > 0 && refree_info.Game_Robot_state.robot_level < 3)
+	{
+		SPEED_LMT = 0.003f;
+	}
+	else if(refree_info.Game_Robot_state.robot_level >= 3 && refree_info.Game_Robot_state.robot_level < 6)
+	{
+		SPEED_LMT = 0.004f;
+	}
+	else if(refree_info.Game_Robot_state.robot_level >= 6 && refree_info.Game_Robot_state.robot_level < 9)
+	{
+		SPEED_LMT = 0.005f;
+	}
+	else if(refree_info.Game_Robot_state.robot_level >= 9 && refree_info.Game_Robot_state.robot_level < 11)
+	{
+		SPEED_LMT = 0.006f;
+	}
+	else
+	{
+		SPEED_LMT = 0.006f;
+	}
+#endif
+
+#ifdef GAME_ONE
+	if(RC_Ctl . keyboard . X)
+		SPEED_LMT = 0.010f;
+	else
+		SPEED_LMT = 0.008f;
+#endif
 
 	if(RC_Ctl . keyboard . Q)
     	supercap_tx_data.systemRestart = 1;
@@ -124,7 +155,34 @@ void KeyboardCtrl (Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 
 	if ( RC_Ctl . keyboard . SHIFT )
 	{
-		chs -> mode = SPIN;
+		chs -> mode = SPIN;//等级判断
+
+#ifdef GAME_THREE           //3v3设置
+		if(refree_info.Game_Robot_state.robot_level > 0 && refree_info.Game_Robot_state.robot_level < 3)
+		{
+			chassis_cmd.omega_z = 0.5;
+		}
+		else if(refree_info.Game_Robot_state.robot_level >= 3 && refree_info.Game_Robot_state.robot_level < 6)
+		{
+			chassis_cmd.omega_z = 0.7;
+		}
+		else if(refree_info.Game_Robot_state.robot_level >= 6 && refree_info.Game_Robot_state.robot_level < 9)
+		{
+			chassis_cmd.omega_z = 0.8;
+		}
+		else if(refree_info.Game_Robot_state.robot_level >= 9 && refree_info.Game_Robot_state.robot_level < 11)
+		{
+			chassis_cmd.omega_z = 1.0;
+		}
+		else
+		{
+			chassis_cmd.omega_z = 0.6;
+		}
+#endif
+
+#ifdef GAME_ONE          //1v1设置
+		chassis_cmd.omega_z = 1.1;
+#endif
 		gim -> spin_flag = 1;
 	}
 	else
@@ -137,6 +195,11 @@ void KeyboardCtrl (Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 		ui_reinit();
 	}
 
+	if(supercap_rx_data.capEnergy < 60)
+	{
+		SPEED_LMT *= 0.8;
+		chassis_cmd.omega_z *= 0.8;
+	}
 }
 
 //canbus--RC_Ctl.rc.sw1 == 1 || RC_Ctl.rc.sw1 == 3 是开启状态
@@ -150,7 +213,14 @@ void RemoteCtrl (Gimbal_CmdTypedef *gim, Chassis_CmdTypedef *chs)
 	gim -> v_pitch = (float) - RC_Ctl . rc . ch4 * REMOTE_PITCH_SEN;
 	gim -> v_shoot = (float) RC_Ctl . rc .wheel * 2;
 	
-	chs -> mode = RC_Ctl . rc . sw1;
+	if(RC_Ctl . rc . sw1 == 1)
+	{
+		chs -> mode = FOLLOW;
+	}
+	else if(RC_Ctl . rc . sw1 == 3)
+	{
+		chs -> mode = SYOP;
+	}
 
 	//sw1
 //	if( RC_Ctl . rc . sw1 == 0 )
@@ -217,14 +287,15 @@ void ControlTask (void *argument)
 //					chassis.pid[OUTER].target,
 //					chassis.pid[OUTER].measure);
 
-		// vofa_demo(motor_list[MOTOR_YAW] -> pid[ANGLE].measure,
-		// 		  motor_list[MOTOR_YAW] -> pid[ANGLE].target,
+	    // vofa_demo(motor_list[MOTOR_YAW] -> pid[ANGLE].target,
+	    // 		motor_list[MOTOR_YAW] -> pid[ANGLE].measure,
 
-		// 		  motor_list[MOTOR_YAW] -> pid[SPEED].measure,
-		// 		  motor_list[MOTOR_YAW] -> pid[SPEED].target,
 
-		// 		  motor_list[MOTOR_YAW] -> target,
-		// 		  motor_list[MOTOR_YAW] -> output);
+	 	// 	  motor_list[MOTOR_PITCH] -> pid[ANGLE].target,
+	 	// 	  motor_list[MOTOR_PITCH] -> pid[ANGLE].measure,
+
+	 	// 	  0,
+	 	// 	  motor_list[MOTOR_YAW] -> output);
 
 
 //		vofa_demo((MotorGetVal (motor_list[MOTOR_YAW], IMU, ORIGIN)  + gimbal_auto.yaw_diff),
@@ -240,21 +311,6 @@ void ControlTask (void *argument)
 //				   (gimbal_auto.pitch),
 //				   MotorGetVal (motor_list[MOTOR_PITCH], IMU, ORIGIN),
 //				   gimbal_auto.pitch);
-//
-//		vofa_demo(RC_Ctl.rc.sw1,
-//				  RC_Ctl.rc.sw2,
-//				  remote_rest_flag,//restart
-//				  remote_error_flag,//
-//				  remote_rxbuff[1],
-//				  remote_rxbuff[2]);
-
-//		vofa_demo( motor_list[7]->target,
-//					MotorGetVal(motor_list[7],MOTORSPEED,RAD),
-//					motor_list[8]->target,
-//					MotorGetVal(motor_list[8],MOTORSPEED,RAD),
-//					motor_list[6]->pid[1].target,
-//					motor_list[6]->pid[1].measure
-//							);
 
 //		vofa_demo(motor_list[2]->target,
 //				  motor_list[3]->target,
@@ -272,9 +328,6 @@ void ControlTask (void *argument)
 //				  motor_list[5]->pid[1].measure);
 		//打包发送
 		Pack_And_Send_Data_ROS2 (&aim_packet_to_nuc);
-
-
-//		highWaterMark = uxTaskGetStackHighWaterMark(NULL);
 
 		Control_diff = osKernelGetTickCount() - time;
 		time = osKernelGetTickCount ();
